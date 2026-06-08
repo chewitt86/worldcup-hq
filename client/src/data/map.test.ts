@@ -2,9 +2,9 @@ import { describe, expect, test } from 'vitest';
 import { VENUES, HOME, lonLatXY, stageRoutes, teamGames, koGame } from './map';
 
 describe('map data', () => {
-  test('16 host venues, 32 team homes', () => {
+  test('16 host venues, 48 team homes', () => {
     expect(Object.keys(VENUES)).toHaveLength(16);
-    expect(Object.keys(HOME)).toHaveLength(32);
+    expect(Object.keys(HOME)).toHaveLength(48);
   });
 
   test('lonLatXY maps the corners of the equirectangular plane', () => {

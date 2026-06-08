@@ -2,8 +2,8 @@ import { describe, expect, test } from 'vitest';
 import { TEAMS, PEOPLE, TICKER, NEXTUP, KICKOFF } from './teams';
 
 describe('teams data', () => {
-  test('32 teams in total', () => {
-    expect(Object.keys(TEAMS)).toHaveLength(32);
+  test('48 teams in total', () => {
+    expect(Object.keys(TEAMS)).toHaveLength(48);
   });
 
   test('META titles + facts applied to a team', () => {

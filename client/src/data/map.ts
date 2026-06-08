@@ -92,7 +92,7 @@ export const VENUES: Record<string, Venue> = {
   MTY: { city: 'Monterrey', host: 'MEX', lat: 25.67, lon: -100.24 },
 };
 
-/* Team home capitals (approx) */
+/* Team home capitals (approx) — all 48 nations */
 export const HOME: Record<string, LatLon> = {
   BRA: { lat: -15.79, lon: -47.88 }, FRA: { lat: 48.85, lon: 2.35 },
   ARG: { lat: -34.61, lon: -58.38 }, ENG: { lat: 51.51, lon: -0.13 },
@@ -102,14 +102,23 @@ export const HOME: Record<string, LatLon> = {
   USA: { lat: 38.90, lon: -77.04 }, MEX: { lat: 19.43, lon: -99.13 },
   CAN: { lat: 45.42, lon: -75.70 }, JPN: { lat: 35.68, lon: 139.69 },
   SEN: { lat: 14.69, lon: -17.45 }, GHA: { lat: 5.60, lon: -0.19 },
-  BEL: { lat: 50.85, lon: 4.35 }, ITA: { lat: 41.90, lon: 12.50 },
-  URU: { lat: -34.90, lon: -56.16 }, COL: { lat: 4.71, lon: -74.07 },
-  SUI: { lat: 46.95, lon: 7.45 }, DEN: { lat: 55.68, lon: 12.57 },
+  BEL: { lat: 50.85, lon: 4.35 }, URU: { lat: -34.90, lon: -56.16 },
+  COL: { lat: 4.71, lon: -74.07 }, SUI: { lat: 46.95, lon: 7.45 },
   KOR: { lat: 37.57, lon: 126.98 }, AUS: { lat: -35.28, lon: 149.13 },
-  POL: { lat: 52.23, lon: 21.01 }, SRB: { lat: 44.79, lon: 20.45 },
-  ECU: { lat: -0.18, lon: -78.47 }, NGA: { lat: 9.06, lon: 7.50 },
-  EGY: { lat: 30.04, lon: 31.24 }, NOR: { lat: 59.91, lon: 10.75 },
-  TUR: { lat: 39.93, lon: 32.86 }, IRN: { lat: 35.69, lon: 51.39 },
+  ECU: { lat: -0.18, lon: -78.47 }, EGY: { lat: 30.04, lon: 31.24 },
+  NOR: { lat: 59.91, lon: 10.75 }, TUR: { lat: 39.93, lon: 32.86 },
+  IRN: { lat: 35.69, lon: 51.39 },
+  RSA: { lat: -25.75, lon: 28.19 }, CZE: { lat: 50.08, lon: 14.44 },
+  QAT: { lat: 25.29, lon: 51.53 }, HAI: { lat: 18.59, lon: -72.31 },
+  SCO: { lat: 55.95, lon: -3.19 }, CUW: { lat: 12.11, lon: -68.93 },
+  CIV: { lat: 5.35, lon: -4.00 }, TUN: { lat: 36.81, lon: 10.18 },
+  NZL: { lat: -41.29, lon: 174.78 }, CPV: { lat: 14.93, lon: -23.51 },
+  KSA: { lat: 24.71, lon: 46.68 }, IRQ: { lat: 33.32, lon: 44.36 },
+  ALG: { lat: 36.75, lon: 3.06 }, JOR: { lat: 31.95, lon: 35.93 },
+  UZB: { lat: 41.31, lon: 69.24 }, PAN: { lat: 8.98, lon: -79.52 },
+  PAR: { lat: -25.30, lon: -57.64 }, AUT: { lat: 48.21, lon: 16.37 },
+  SWE: { lat: 59.33, lon: 18.07 }, BIH: { lat: 43.86, lon: 18.41 },
+  COD: { lat: -4.32, lon: 15.31 },
 };
 
 /* Each group is "based" near a few host cities; teams play their group games there */
@@ -118,6 +127,8 @@ export const GROUP_VENUES: Record<string, string[]> = {
   C: ['MIA', 'ATL', 'HOU'], D: ['DAL', 'HOU', 'MEX'],
   E: ['GDL', 'MTY', 'KC'], F: ['PHI', 'KC', 'DAL'],
   G: ['VAN', 'SEA', 'SF'], H: ['TOR', 'PHI', 'NYC'],
+  I: ['MEX', 'GDL', 'MTY'], J: ['ATL', 'MIA', 'BOS'],
+  K: ['KC', 'DAL', 'HOU'], L: ['LA', 'VAN', 'SEA'],
 };
 
 export const ROUTES: Record<string, string[]> = {};

@@ -52,7 +52,7 @@ describe('store actions', () => {
     // derived map reflects the edit
     expect(selectTeams(s.getState()).BRA.odds).toBe('2/1');
     // the static import is untouched
-    expect(TEAMS.BRA.odds).toBe('5/1');
+    expect(TEAMS.BRA.odds).toBe('11/1');
   });
 
   test('addPerson appends with derived initials, updatePerson re-derives, removePerson deletes', () => {

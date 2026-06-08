@@ -1,7 +1,7 @@
-/* World Cup HQ — tournament data: 8 groups, generated round-robin results and
+/* World Cup HQ — tournament data: 12 groups, generated round-robin results and
    standings, plus the small derived helpers (table/groupOf/backers/isAlive).
-   Ported from the prototype's data-tournament.js into a typed, pure module
-   (no window). All values, logic and numbers are identical to the prototype. */
+   Groups reflect the real 2026 World Cup final draw (48 teams / 12 groups).
+   The standings model is still generated from odds — pure, no window. */
 
 import { TEAMS, PEOPLE, type Person } from './teams';
 
@@ -26,16 +26,20 @@ export interface TableRow extends Standing {
   code: string;
 }
 
-/* ---- 8 groups of 4 ---- */
+/* ---- 12 groups of 4 (real 2026 final-draw line-ups) ---- */
 export const GROUPS: Record<string, string[]> = {
-  A: ['BRA', 'BEL', 'JPN', 'NOR'],
-  B: ['FRA', 'ITA', 'MEX', 'KOR'],
-  C: ['ARG', 'URU', 'SEN', 'AUS'],
-  D: ['ESP', 'COL', 'CAN', 'EGY'],
-  E: ['GER', 'SUI', 'MAR', 'ECU'],
-  F: ['POR', 'DEN', 'USA', 'IRN'],
-  G: ['NED', 'POL', 'GHA', 'TUR'],
-  H: ['ENG', 'SRB', 'CRO', 'NGA'],
+  A: ['MEX', 'RSA', 'KOR', 'CZE'],
+  B: ['CAN', 'BIH', 'QAT', 'SUI'],
+  C: ['BRA', 'MAR', 'HAI', 'SCO'],
+  D: ['USA', 'PAR', 'AUS', 'TUR'],
+  E: ['GER', 'CUW', 'CIV', 'ECU'],
+  F: ['NED', 'JPN', 'SWE', 'TUN'],
+  G: ['BEL', 'EGY', 'IRN', 'NZL'],
+  H: ['ESP', 'CPV', 'KSA', 'URU'],
+  I: ['FRA', 'SEN', 'IRQ', 'NOR'],
+  J: ['ARG', 'ALG', 'AUT', 'JOR'],
+  K: ['POR', 'COD', 'UZB', 'COL'],
+  L: ['ENG', 'CRO', 'GHA', 'PAN'],
 };
 
 /* ---- teams knocked OUT so far (= union of everyone's sweepstake outs) ---- */

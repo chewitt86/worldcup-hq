@@ -11,10 +11,12 @@ test('shape', () => {
   expect(b.sf).toHaveLength(2);
 });
 
-test('eliminated team loses in R32', () => {
+test('eliminated team is seeded out of the Round of 32', () => {
+  // With 48 teams the bracket takes the strongest 32; eliminated teams sink to
+  // the bottom seeds and so never reach the Round of 32 at all.
   const b = buildBracket({ results: {}, teams: TEAMS });
-  const tie = b.r32.find((t) => t.a === 'JPN' || t.b === 'JPN')!;
-  expect(tie.w).not.toBe('JPN');
+  const r32codes = b.r32.flatMap((t) => [t.a, t.b]);
+  expect(r32codes).not.toContain('JPN');
 });
 
 /* ---- advancement from saved results (the improvement) ---- */

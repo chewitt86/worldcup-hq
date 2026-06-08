@@ -2,9 +2,9 @@ import { describe, expect, test } from 'vitest';
 import { GROUPS, table, STANDINGS } from './tournament';
 
 describe('tournament data', () => {
-  test('8 groups of 4', () => {
+  test('12 groups of 4', () => {
     const g = Object.keys(GROUPS);
-    expect(g).toHaveLength(8);
+    expect(g).toHaveLength(12);
     Object.values(GROUPS).forEach((t) => expect(t).toHaveLength(4));
   });
 
