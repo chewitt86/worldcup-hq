@@ -1,0 +1,28 @@
+services:
+  worldcup-hq:
+    build: .
+    image: worldcup-hq
+    container_name: worldcup-hq
+    ports:
+      - "3050:3050"              # change the LEFT number if 3050 is taken on your server
+    volumes:
+      - ./server/data:/app/server/data   # shared board + API keys live here — BACK THIS UP
+    environment:
+      - PORT=3050
+      # --- passwords (set these in a git-ignored .env file, not here) ---
+      - ADMIN_PASSWORD=${ADMIN_PASSWORD:-changeme}   # the in-app admin login
+      - VIEW_PASSWORD=${VIEW_PASSWORD:-}             # optional: gate the whole site for viewers
+    restart: unless-stopped
+
+  # ==========================================================================
+  # OPTIONAL — expose the site on your own domain via Cloudflare Tunnel
+  # (no router port-forwarding, free HTTPS):
+  #   1) Cloudflare dashboard -> Zero Trust -> Networks -> Tunnels -> Create
+  #      -> Cloudflared -> copy the TOKEN
+  #   2) Uncomment below, paste the token, Compose Up again
+  #   3) In the tunnel's "Public Hostname" tab: Service HTTP -> worldcup-hq:3050
+  # cloudflared:
+  #   image: cloudflare/cloudflared:latest
+  #   container_name: cloudflared
+  #   restart: unless-stopped
+  #   command: tunnel --no-autoupdate run --token PASTE_YOUR_TUNNEL_TOKEN

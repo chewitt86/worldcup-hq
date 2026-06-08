@@ -1,0 +1,13 @@
+# keep the build context small + reproducible
+**/node_modules
+client/dist
+server/data
+legacy
+design_handoff_leos_world_cup
+docs
+backups
+.git
+.github
+*.md
+.env
+*.tmp
