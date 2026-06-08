@@ -167,6 +167,52 @@ function resolveProvider(body) {
   return provider;
 }
 
+/* ------------------------------------------------------- results poller ----- */
+
+/* Merge a results patch into the shared board (seeding an empty board if none),
+ * stamp settings.lastSync, and persist via state.write (bumps rev). */
+function mergeResultsIntoBoard(results) {
+  const board = state.read().state || {};
+  board.results = { ...(board.results || {}), ...(results || {}) };
+  board.settings = board.settings || {};
+  board.settings.lastSync = new Date().toISOString();
+  return state.write(board);
+}
+
+/* The active provider (WITH its server-side key) + the live/sync settings. */
+function activeProviderConfig() {
+  const cfg = config.effectiveConfig();
+  const id = cfg.settings.activeProvider;
+  return { settings: cfg.settings, provider: cfg.providers[id] || {} };
+}
+
+let pollTimer = null;
+
+/* One poll: fetch live results and merge them into the board. Never throws. */
+async function pollOnce() {
+  try {
+    const { provider } = activeProviderConfig();
+    if (!provider || !provider.key) return;
+    const out = await fetcher.fetchLive(provider);
+    if (!out || !out.ok) return;
+    mergeResultsIntoBoard(out.results);
+  } catch (e) {
+    /* swallow — the poller must never crash the server loop */
+  }
+}
+
+/* Reconfigure the background poller from the current settings. Runs only when
+ * dataSource is "live", the active provider has a key, and autoSync is on;
+ * otherwise it is switched off. Polls once immediately, then every syncMins. */
+function restartPoller() {
+  if (pollTimer) { clearInterval(pollTimer); pollTimer = null; }
+  const { settings, provider } = activeProviderConfig();
+  if (settings.dataSource !== "live" || !provider.key || !settings.autoSync) return;
+  const mins = Math.max(1, parseInt(settings.syncMins, 10) || 15);
+  pollOnce(); // fire immediately (fire-and-forget; never throws)
+  pollTimer = setInterval(pollOnce, mins * 60000);
+}
+
 /* -------------------------------------------------------------- api router -- */
 
 /* Handle the shared-board + admin API. Reached only after the viewer gate, so
@@ -206,7 +252,9 @@ async function handleApi(req, res, url, method) {
     if (!auth.isAdmin(req)) return sendJson(res, 401, { error: "unauthorized" });
     const body = await readJsonBody(req);
     if (body === null) return sendJson(res, 400, { error: "bad json" });
-    return sendJson(res, 200, config.saveConfig(body));
+    const saved = config.saveConfig(body);
+    restartPoller(); // settings may have toggled live/autoSync/interval
+    return sendJson(res, 200, saved);
   }
 
   /* POST /api/admin/test — probe the chosen provider (reports a missing key
@@ -224,11 +272,10 @@ async function handleApi(req, res, url, method) {
     const body = await readJsonBody(req);
     const out = await fetcher.fetchLive(resolveProvider(body));
     if (!out.ok) return sendJson(res, 200, out);
-    const board = state.read().state || {};
-    board.results = { ...(board.results || {}), ...(out.results || {}) };
-    const env = state.write(board);
+    const env = mergeResultsIntoBoard(out.results);
     return sendJson(res, 200, {
-      ok: true, rev: env.rev, applied: Object.keys(out.results || {}).length,
+      ok: true, rev: env.rev, applied: (out.applied || Object.keys(out.results || {})).length,
+      unmatched: out.unmatched || [],
     });
   }
 
@@ -288,6 +335,7 @@ const server = createServer();
 if (require.main === module) {
   server.listen(PORT, () => {
     console.log(`⚽ Leo's World Cup server on http://0.0.0.0:${PORT}  (client: ${CLIENT_DIR})`);
+    restartPoller(); // start the live results poller if configured
   });
 }
 
