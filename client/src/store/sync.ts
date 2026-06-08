@@ -73,6 +73,8 @@ export interface Sync {
   localRev: () => number;
   /* are we currently reaching the server? */
   isOnline: () => boolean;
+  /* true while a hydrated board is being applied (so push-on-change can skip). */
+  isApplying: () => boolean;
 }
 
 /* the editable board fields the store shares with the server. */
@@ -119,6 +121,13 @@ export function createSync(opts: SyncOptions): Sync {
   let localRev = 0;
   let online = false;
   let timer: ReturnType<typeof setInterval> | null = null;
+  /* true while we're applying a hydrated board, so the push-on-change wiring
+     doesn't echo a just-received update straight back to the server. */
+  let applying = false;
+  function applyGuarded(board: Partial<AppState>): void {
+    applying = true;
+    try { applyBoard(store, board); } finally { applying = false; }
+  }
 
   /* ----- offline read cache (localStorage) ----- */
   function writeCache(): void {
@@ -150,7 +159,7 @@ export function createSync(opts: SyncOptions): Sync {
         if ((env.rev || 0) <= localRev) return env;
         /* don't clobber a live edit. */
         if (isFieldFocused()) return env;
-        applyBoard(store, env.state);
+        applyGuarded(env.state);
         localRev = env.rev || 0;
         writeCache();
       }
@@ -161,7 +170,7 @@ export function createSync(opts: SyncOptions): Sync {
       online = false;
       if (localRev === 0) {
         const cached = readCache();
-        if (cached) applyBoard(store, cached);
+        if (cached) applyGuarded(cached);
       }
       return null;
     }
@@ -212,6 +221,7 @@ export function createSync(opts: SyncOptions): Sync {
     isRunning: () => timer !== null,
     localRev: () => localRev,
     isOnline: () => online,
+    isApplying: () => applying,
   };
 }
 
@@ -240,3 +250,21 @@ export const sync: Sync = createSync({
   store: singletonStore,
   getToken: readAdminToken,
 });
+
+/* Wire the singleton sync into the app lifecycle (call once at boot):
+   - start the poll loop (immediate hydrate, then every ~10s);
+   - push local edits back to the shared board, debounced, skipping changes that
+     are just a hydrated update being applied. push() itself no-ops for viewers
+     (no admin token), so only admin edits reach the server. */
+let wired = false;
+export function wireSync(): void {
+  if (wired) return;
+  wired = true;
+  sync.start();
+  let t: ReturnType<typeof setTimeout> | null = null;
+  singletonStore.subscribe(() => {
+    if (sync.isApplying()) return;
+    if (t) clearTimeout(t);
+    t = setTimeout(() => void sync.push(), 400);
+  });
+}
