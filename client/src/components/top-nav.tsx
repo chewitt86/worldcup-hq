@@ -34,14 +34,17 @@ export function TopNav({
     </div>
   );
 
-  /* pills never shrink, so the row scrolls horizontally instead of cramping. */
+  /* Mobile: the pills WRAP so every tab is visible (a couple of centred rows),
+     with slightly more compact pills. Desktop: a single right-aligned row. */
   const pills = (
-    <div className="noscroll" style={{ display: 'flex', gap: 8, overflowX: 'auto',
+    <div className="noscroll" style={{ display: 'flex', gap: mobile ? 7 : 8,
+      flexWrap: mobile ? 'wrap' : 'nowrap', overflowX: mobile ? 'visible' : 'auto',
       flex: mobile ? undefined : 1, width: mobile ? '100%' : undefined,
-      justifyContent: mobile ? 'flex-start' : 'flex-end', padding: '4px 2px' }}>
+      justifyContent: mobile ? 'center' : 'flex-end', padding: '4px 2px' }}>
       {items.map((it) => (
         <div key={it} className={'navpill tap' + (it === active ? ' active' : '')}
-          onClick={() => onNav && onNav(it)} style={{ flex: '0 0 auto' }}>{it}</div>
+          onClick={() => onNav && onNav(it)}
+          style={mobile ? { flex: '0 0 auto', fontSize: 13, padding: '7px 13px' } : { flex: '0 0 auto' }}>{it}</div>
       ))}
     </div>
   );
