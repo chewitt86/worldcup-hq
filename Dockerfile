@@ -9,9 +9,11 @@
 # ---- stage 1: build the client ----
 FROM node:22-alpine AS build
 WORKDIR /app/client
-# install deps from the lockfile first (better layer caching)
+# install deps first (better layer caching). `npm install` (not `npm ci`) so the
+# build is robust to platform-specific optional deps that a lockfile generated on
+# another OS can omit (e.g. @emnapi/* on linux/alpine).
 COPY client/package.json client/package-lock.json ./
-RUN npm ci
+RUN npm install --no-audit --no-fund
 # then build
 COPY client/ ./
 RUN npm run build
