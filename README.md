@@ -20,10 +20,12 @@ docker compose up -d --build
 Open `http://<server-ip>:3050`. Back up `server/data/` and you've backed up everything.
 
 ## Running it on Unraid
-**Docker Compose Manager (recommended):** install it from Community Apps, copy this folder
-to e.g. `/mnt/user/appdata/worldcup-hq`, add a Compose stack pointing at it, set `.env`,
-Compose Up. Browse to `http://<TOWER-IP>:3050`. Map `/app/server/data` →
-`/mnt/user/appdata/worldcup-hq/server/data` (the only folder that must persist).
+**📖 Full step-by-step GUI walkthrough: [`docs/UNRAID-SETUP.md`](docs/UNRAID-SETUP.md).**
+
+Short version: install the **Docker Compose Manager** plugin from Community Apps, get this
+folder onto the server at `/mnt/user/appdata/worldcup-hq` (Git clone or SMB copy), create a
+`.env` (`ADMIN_PASSWORD`), add a Compose stack pointing at the folder, and **Compose Up**.
+Browse to `http://<TOWER-IP>:3050`. The only folder that must persist is `server/data`.
 
 ## Develop here, deploy there (Git workflow)
 The repo is the source of truth (`github.com/chewitt86/worldcup-hq`, private).
