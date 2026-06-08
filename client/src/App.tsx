@@ -3,8 +3,8 @@
    WCHQContext value from the store (settings/people) plus local UI state
    (toast/person/confetti/goal/adminAuthed) and persisted reminders, then renders
    the dark backdrop, confetti, goal flash, top nav, the current page, Wobbles the
-   mascot, the toast and the person popup. Only the four built pages are wired into
-   the registry; Knockout/Map/Admin fall back to a playful "still building" toast. */
+   mascot, the toast and the person popup. The built pages are wired into the
+   registry; Map/Admin fall back to a playful "still building" toast. */
 
 import { useState, useEffect, useRef, type FC } from 'react';
 import { WCHQContext, type AppContextValue } from './app/context';
@@ -21,6 +21,8 @@ import { HomePage } from './pages/home';
 import { SweepstakePage } from './pages/sweepstake';
 import { TeamsPage } from './pages/teams';
 import { GroupsPage } from './pages/groups';
+import { KnockoutPage } from './pages/knockout';
+import { MapPage } from './pages/map';
 
 /* ----- Wobbles, the mascot ----- */
 const CHEERS = ['GOAAAL! ⚽', "Let's gooo!", 'Up the family!', 'Wheee! 🎉',
@@ -78,10 +80,11 @@ function GoalFlash({ show }: { show: boolean }) {
   );
 }
 
-/* Page registry — only the built pages are wired. Knockout/Map/Admin are added
-   in later phases; until then go() falls back to a playful "still building" toast. */
+/* Page registry — only the built pages are wired. Map/Admin are added in later
+   phases; until then go() falls back to a playful "still building" toast. */
 const PAGES: Record<string, FC> = {
   Home: HomePage, Sweepstake: SweepstakePage, Teams: TeamsPage, Groups: GroupsPage,
+  Knockout: KnockoutPage, Map: MapPage,
 };
 
 function App() {
