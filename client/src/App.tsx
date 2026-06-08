@@ -23,6 +23,7 @@ import { TeamsPage } from './pages/teams';
 import { GroupsPage } from './pages/groups';
 import { KnockoutPage } from './pages/knockout';
 import { MapPage } from './pages/map';
+import { AdminPage } from './pages/admin';
 
 /* ----- Wobbles, the mascot ----- */
 const CHEERS = ['GOAAAL! ⚽', "Let's gooo!", 'Up the family!', 'Wheee! 🎉',
@@ -84,7 +85,7 @@ function GoalFlash({ show }: { show: boolean }) {
    phases; until then go() falls back to a playful "still building" toast. */
 const PAGES: Record<string, FC> = {
   Home: HomePage, Sweepstake: SweepstakePage, Teams: TeamsPage, Groups: GroupsPage,
-  Knockout: KnockoutPage, Map: MapPage,
+  Knockout: KnockoutPage, Map: MapPage, Admin: AdminPage,
 };
 
 function App() {
