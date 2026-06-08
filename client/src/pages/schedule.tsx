@@ -71,27 +71,33 @@ function OwnerIcons({ code, people, size = 15, max = 2 }: {
   );
 }
 
-/* One side of a fixture: flag + code + owners (or a neutral TBD slot). */
-function TeamSide({ code, teams, people, win, align }: {
-  code: string; teams: Record<string, Team>; people: Person[]; win: boolean; align: 'left' | 'right';
+/* A flag chip, or a neutral "?" box for an undecided knockout slot. */
+function FlagOrTBD({ code }: { code: string }) {
+  if (code) return <Flag code={code} style={{ width: 30, height: 21, borderRadius: 4, flex: '0 0 auto' }} />;
+  return (
+    <span className="head" style={{ width: 30, height: 21, borderRadius: 4, flex: '0 0 auto',
+      background: 'var(--cream2)', border: '2px solid var(--ink)', fontSize: 12,
+      display: 'flex', alignItems: 'center', justifyContent: 'center' }}>?</span>
+  );
+}
+
+/* One side of a fixture: the team NAME sits directly next to its FLAG, and the
+   whole side hugs its edge — left team to the left, right team to the right. */
+function TeamSide({ code, teams, win, align }: {
+  code: string; teams: Record<string, Team>; win: boolean; align: 'left' | 'right';
 }) {
   const right = align === 'right';
   const name = code ? (teams[code]?.name ?? code) : 'TBD';
+  const nameEl = (
+    <span className="head" style={{ fontSize: 15, minWidth: 0, overflow: 'hidden', textOverflow: 'ellipsis',
+      whiteSpace: 'nowrap', textAlign: right ? 'right' : 'left', opacity: win ? 1 : code ? 0.95 : 0.5 }}>
+      {name}
+    </span>
+  );
   return (
-    <div style={{ display: 'flex', alignItems: 'center', gap: 7, flex: 1, minWidth: 0,
-      flexDirection: right ? 'row-reverse' : 'row', justifyContent: right ? 'flex-start' : 'flex-start' }}>
-      {code ? (
-        <Flag code={code} style={{ width: 28, height: 20, borderRadius: 4, flex: '0 0 auto' }} />
-      ) : (
-        <span className="head" style={{ width: 28, height: 20, borderRadius: 4, flex: '0 0 auto',
-          background: 'var(--cream2)', border: '2px solid var(--ink)', fontSize: 11,
-          display: 'flex', alignItems: 'center', justifyContent: 'center' }}>?</span>
-      )}
-      <span className="head" style={{ fontSize: 14, minWidth: 0, overflow: 'hidden', textOverflow: 'ellipsis',
-        whiteSpace: 'nowrap', opacity: win ? 1 : code ? 0.92 : 0.55 }}>
-        {name}
-      </span>
-      <OwnerIcons code={code} people={people} size={14} max={1} />
+    <div style={{ display: 'flex', alignItems: 'center', gap: 8, flex: 1, minWidth: 0,
+      justifyContent: right ? 'flex-end' : 'flex-start' }}>
+      {right ? <>{nameEl}<FlagOrTBD code={code} /></> : <><FlagOrTBD code={code} />{nameEl}</>}
     </div>
   );
 }
@@ -126,40 +132,46 @@ function FixtureRow({ f, teams, people, onMatch }: {
       : `🔔 Reminder set for ${name(f.a)} v ${name(f.b)}!`);
   };
 
+  const hasOwners = backers(f.a, people).length > 0 || backers(f.b, people).length > 0;
+
   return (
     <div className={'sticker-sm' + (decided ? ' tap' : '')} onClick={openPopup}
-      style={{ background: 'var(--cream)', padding: '10px 12px', display: 'flex', flexDirection: 'column', gap: 8 }}>
-      {/* header: round chip + score/time badge */}
+      style={{ background: 'var(--cream)', padding: '10px 13px', display: 'flex', flexDirection: 'column', gap: 9 }}>
+      {/* header: round chip + kick-off time (BST) */}
       <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
         <span className="head" style={{ background: f.played ? 'var(--grass)' : 'var(--grape)', color: '#fff',
           fontSize: 11, padding: '3px 10px', borderRadius: 999, border: '2px solid var(--ink)', whiteSpace: 'nowrap' }}>
           {f.label}
         </span>
-        <span style={{ marginLeft: 'auto' }}>
-          {f.played && f.as != null && f.bs != null ? (
-            <span className="head" style={{ fontSize: 18, color: 'var(--ink)' }}>{f.as}–{f.bs}</span>
-          ) : (
-            <span className="head" style={{ fontSize: 14, color: 'var(--ink)' }}>
-              {kickTime(f.ts)}<span style={{ color: 'var(--tomato)', fontSize: 11 }}> BST</span>
-            </span>
-          )}
+        <span className="head" style={{ marginLeft: 'auto', fontSize: 13, color: 'var(--ink)', whiteSpace: 'nowrap' }}>
+          🕒 {kickTime(f.ts)}<span style={{ color: 'var(--tomato)', fontSize: 10 }}> BST</span>
         </span>
       </div>
 
-      {/* teams */}
-      <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-        <TeamSide code={f.a} teams={teams} people={people} win={aWin} align="left" />
-        <span className="head" style={{ fontSize: 13, color: 'var(--tomato)', flex: '0 0 auto' }}>
-          {f.played ? '·' : 'v'}
-        </span>
-        <TeamSide code={f.b} teams={teams} people={people} win={bWin} align="right" />
+      {/* teams: flag→name (left) · score / v · name→flag (right, hugging the edge) */}
+      <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+        <TeamSide code={f.a} teams={teams} win={aWin} align="left" />
+        {f.played && f.as != null && f.bs != null ? (
+          <span className="head" style={{ fontSize: 18, color: 'var(--ink)', flex: '0 0 auto',
+            background: 'var(--cream2)', border: '2.5px solid var(--ink)', borderRadius: 9, padding: '1px 9px' }}>
+            {f.as}–{f.bs}
+          </span>
+        ) : (
+          <span className="head" style={{ fontSize: 14, color: 'var(--tomato)', flex: '0 0 auto' }}>v</span>
+        )}
+        <TeamSide code={f.b} teams={teams} win={bWin} align="right" />
       </div>
 
-      {/* footer: venue + remind toggle (upcoming only) */}
+      {/* footer: venue · owners · remind toggle (upcoming only) */}
       <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-        {f.venue && (
-          <span style={{ fontSize: 11.5, fontWeight: 700, opacity: 0.6, minWidth: 0,
-            overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>📍 {f.venue}</span>
+        <span style={{ fontSize: 11.5, fontWeight: 700, opacity: 0.65, minWidth: 0,
+          overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>📍 {f.venue || 'Venue TBC'}</span>
+        {hasOwners && (
+          <div style={{ display: 'flex', alignItems: 'center', gap: 5, flex: '0 0 auto' }} title="Sweepstake owners">
+            <span style={{ fontSize: 11 }}>👥</span>
+            <OwnerIcons code={f.a} people={people} size={16} max={2} />
+            <OwnerIcons code={f.b} people={people} size={16} max={2} />
+          </div>
         )}
         {!f.played && (
           <div className="tap" onClick={toggleRemind} style={{ marginLeft: 'auto', fontFamily: 'var(--head)',
@@ -203,14 +215,18 @@ function EmptyState({ teams }: { teams: Record<string, Team> }) {
             <div className="head" style={{ fontSize: 14, marginBottom: 8 }}>Group {g}</div>
             <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
               {GROUP_FIXTURES[g].map((fx) => (
-                <div key={fx.id} style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 12.5, fontWeight: 700 }}>
-                  <Flag code={fx.a} style={{ width: 22, height: 15, borderRadius: 3, flex: '0 0 auto' }} />
-                  <span style={{ minWidth: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                    {teams[fx.a]?.name ?? fx.a}</span>
+                <div key={fx.id} style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 12.5, fontWeight: 700 }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 6, flex: 1, minWidth: 0 }}>
+                    <Flag code={fx.a} style={{ width: 22, height: 15, borderRadius: 3, flex: '0 0 auto' }} />
+                    <span style={{ minWidth: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                      {teams[fx.a]?.name ?? fx.a}</span>
+                  </div>
                   <span style={{ color: 'var(--tomato)', fontFamily: 'var(--head)', flex: '0 0 auto' }}>v</span>
-                  <span style={{ minWidth: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                    {teams[fx.b]?.name ?? fx.b}</span>
-                  <Flag code={fx.b} style={{ width: 22, height: 15, borderRadius: 3, flex: '0 0 auto', marginLeft: 'auto' }} />
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 6, flex: 1, minWidth: 0, justifyContent: 'flex-end' }}>
+                    <span style={{ minWidth: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', textAlign: 'right' }}>
+                      {teams[fx.b]?.name ?? fx.b}</span>
+                    <Flag code={fx.b} style={{ width: 22, height: 15, borderRadius: 3, flex: '0 0 auto' }} />
+                  </div>
                 </div>
               ))}
             </div>
