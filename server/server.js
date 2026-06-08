@@ -1,17 +1,35 @@
 /* ============================================================================
  * server.js — Leo's World Cup (zero-dependency Node runtime server)
  *
- * Phase 0 scaffold: serves the built client (client/dist) + GET /api/health.
- * Later phases add: viewer gate, shared board (/api/state), admin auth
- * (/api/admin/*), and the live-data proxy. Uses only built-in Node + global fetch.
+ * Serves the built client (client/dist) + GET /api/health, enforces the VIEWER
+ * GATE (when process.env.VIEW_PASSWORD is set, the whole site and the shared
+ * board require a valid viewer cookie), and exposes the SHARED BOARD + ADMIN
+ * API:
+ *   GET  /api/state          viewer-authed → the {rev,updatedAt,state} envelope
+ *   POST /api/state          admin-only (403 without a token) → bumps rev
+ *   POST /api/admin/login    {password} → {token}
+ *   GET  /api/admin/config   admin-only → masked settings + providers
+ *   POST /api/admin/config   admin-only → persist settings + keys server-side
+ *   POST /api/admin/test     admin-only → live "does the API work?" probe
+ *   POST /api/admin/sync     admin-only → fetch live results into the board
+ *
+ * Provider API keys never reach the browser (config.js masks them). /api/health
+ * is ALWAYS open (Docker healthcheck). Uses only built-in Node + global fetch.
  * ========================================================================== */
 "use strict";
 const http = require("http");
 const fs = require("fs");
 const path = require("path");
+const crypto = require("crypto");
+
+const state = require("./lib/state");
+const auth = require("./lib/auth");
+const config = require("./lib/config");
+const fetcher = require("./lib/fetcher");
 
 const PORT = parseInt(process.env.PORT || "3050", 10);
 const CLIENT_DIR = process.env.CLIENT_DIR || path.join(__dirname, "..", "client", "dist");
+const LOGIN_PAGE = path.join(__dirname, "public-login.html");
 
 const MIME = {
   ".html": "text/html; charset=utf-8", ".js": "text/javascript", ".css": "text/css",
@@ -20,9 +38,201 @@ const MIME = {
   ".map": "application/json",
 };
 
+/* ----------------------------------------------------------- viewer gate ---- */
+
+const VIEWER_COOKIE = "wchq_view";
+/* Opaque viewer tokens live in memory (cookie -> expiry ms). ~30-day lifetime. */
+const VIEWER_TTL_MS = 30 * 24 * 60 * 60 * 1000;
+const viewerTokens = new Map();
+
+/* Read VIEW_PASSWORD at request time so dev/test toggles take effect. */
+function viewPassword() { return process.env.VIEW_PASSWORD || ""; }
+function viewerGateEnabled() { return viewPassword().length > 0; }
+
+function newViewerToken(ttlMs = VIEWER_TTL_MS) {
+  const token = crypto.randomBytes(24).toString("hex");
+  viewerTokens.set(token, Date.now() + ttlMs);
+  return token;
+}
+
+function validViewerToken(token) {
+  if (!token || typeof token !== "string") return false;
+  const expiry = viewerTokens.get(token);
+  if (!expiry) return false;
+  if (Date.now() > expiry) { viewerTokens.delete(token); return false; }
+  return true;
+}
+
+/* Parse the Cookie header into a plain object. */
+function parseCookies(req) {
+  const header = (req && req.headers && req.headers.cookie) || "";
+  const out = {};
+  header.split(";").forEach((part) => {
+    const i = part.indexOf("=");
+    if (i < 0) return;
+    const k = part.slice(0, i).trim();
+    if (!k) return;
+    out[k] = decodeURIComponent(part.slice(i + 1).trim());
+  });
+  return out;
+}
+
+/* A request is viewer-authed when the gate is off, or it carries a valid cookie. */
+function viewerAuthed(req) {
+  if (!viewerGateEnabled()) return true;
+  return validViewerToken(parseCookies(req)[VIEWER_COOKIE]);
+}
+
+/* ---------------------------------------------------------------- helpers ---- */
+
 function sendJson(res, code, obj) {
   res.writeHead(code, { "Content-Type": "application/json", "Cache-Control": "no-store" });
   res.end(JSON.stringify(obj));
+}
+
+/* Serve the standalone sticker login page (used on a gated 401). */
+function serveLoginPage(res, code) {
+  fs.readFile(LOGIN_PAGE, (err, buf) => {
+    if (err) {
+      res.writeHead(code, { "Content-Type": "text/html; charset=utf-8", "Cache-Control": "no-store" });
+      return res.end("<!doctype html><meta charset=utf-8><title>Password required</title>" +
+        "<form method=POST action=/api/viewer/login><input type=password name=password>" +
+        "<button>Let me in</button></form>");
+    }
+    res.writeHead(code, { "Content-Type": "text/html; charset=utf-8", "Cache-Control": "no-store" });
+    res.end(buf);
+  });
+}
+
+/* Collect a (small) request body as a string. */
+function readBody(req) {
+  return new Promise((resolve) => {
+    let data = "";
+    req.on("data", (c) => {
+      data += c;
+      if (data.length > 1e6) req.destroy(); // guard against oversized bodies
+    });
+    req.on("end", () => resolve(data));
+    req.on("error", () => resolve(data));
+  });
+}
+
+/* Pull a `password` field from a JSON or urlencoded body. */
+function extractPassword(raw, contentType) {
+  if (!raw) return "";
+  if (/json/i.test(contentType || "")) {
+    try { return String(JSON.parse(raw).password || ""); } catch (e) { /* fall through */ }
+  }
+  try {
+    const params = new URLSearchParams(raw);
+    if (params.has("password")) return params.get("password") || "";
+  } catch (e) { /* not urlencoded */ }
+  try { return String(JSON.parse(raw).password || ""); } catch (e) { return ""; }
+}
+
+/* POST /api/viewer/login — exchange the viewer password for an httpOnly cookie. */
+async function handleViewerLogin(req, res) {
+  const raw = await readBody(req);
+  const password = extractPassword(raw, req.headers["content-type"]);
+  const ok = !viewerGateEnabled() || (password.length > 0 && password === viewPassword());
+  if (!ok) return serveLoginPage(res, 401);
+
+  const token = newViewerToken();
+  const cookie = `${VIEWER_COOKIE}=${token}; HttpOnly; Path=/; Max-Age=` +
+    `${Math.floor(VIEWER_TTL_MS / 1000)}; SameSite=Lax`;
+  res.writeHead(303, { Location: "/", "Set-Cookie": cookie, "Cache-Control": "no-store" });
+  res.end();
+}
+
+/* Read a JSON request body. Returns the parsed object, `{}` for an empty body,
+ * or `null` when the body is present but not valid JSON (callers map → 400). */
+async function readJsonBody(req) {
+  const raw = await readBody(req);
+  if (!raw) return {};
+  try { return JSON.parse(raw); } catch (e) { return null; }
+}
+
+/* Resolve a provider config (WITH its server-side key) for the live-data proxy.
+ * Defaults to the active provider; the admin panel may inline-override fields
+ * (e.g. a freshly typed key not yet saved) via the request body. */
+function resolveProvider(body) {
+  const cfg = config.effectiveConfig();
+  const b = (body && typeof body === "object") ? body : {};
+  const id = b.provider || b.id || cfg.settings.activeProvider;
+  const provider = { ...(cfg.providers[id] || {}) };
+  ["baseUrl", "authHeader", "path", "name"].forEach((k) => {
+    if (typeof b[k] === "string") provider[k] = b[k];
+  });
+  if (typeof b.key === "string" && b.key.length) provider.key = b.key;
+  return provider;
+}
+
+/* -------------------------------------------------------------- api router -- */
+
+/* Handle the shared-board + admin API. Reached only after the viewer gate, so
+ * every handler here may assume the caller is viewer-authed. */
+async function handleApi(req, res, url, method) {
+  /* GET /api/state — viewer-authed read of the whole envelope. */
+  if (url === "/api/state" && method === "GET") {
+    return sendJson(res, 200, state.read());
+  }
+
+  /* POST /api/state — admin-only write that bumps the revision. */
+  if (url === "/api/state" && method === "POST") {
+    if (!auth.isAdmin(req)) return sendJson(res, 403, { error: "admin only" });
+    const body = await readJsonBody(req);
+    if (body === null) return sendJson(res, 400, { error: "bad json" });
+    const newState = body.state !== undefined ? body.state : body;
+    const env = state.write(newState);
+    return sendJson(res, 200, { rev: env.rev, updatedAt: env.updatedAt });
+  }
+
+  /* POST /api/admin/login — exchange the admin password for a bearer token. */
+  if (url === "/api/admin/login" && method === "POST") {
+    const body = await readJsonBody(req);
+    const token = auth.login(body && body.password);
+    if (!token) return sendJson(res, 401, { error: "wrong password" });
+    return sendJson(res, 200, { token });
+  }
+
+  /* GET /api/admin/config — masked settings + providers (never a raw key). */
+  if (url === "/api/admin/config" && method === "GET") {
+    if (!auth.isAdmin(req)) return sendJson(res, 401, { error: "unauthorized" });
+    return sendJson(res, 200, config.maskedConfig());
+  }
+
+  /* POST /api/admin/config — persist settings + provider keys server-side. */
+  if (url === "/api/admin/config" && method === "POST") {
+    if (!auth.isAdmin(req)) return sendJson(res, 401, { error: "unauthorized" });
+    const body = await readJsonBody(req);
+    if (body === null) return sendJson(res, 400, { error: "bad json" });
+    return sendJson(res, 200, config.saveConfig(body));
+  }
+
+  /* POST /api/admin/test — probe the chosen provider (reports a missing key
+   * cleanly, never throwing into the server loop). */
+  if (url === "/api/admin/test" && method === "POST") {
+    if (!auth.isAdmin(req)) return sendJson(res, 401, { error: "unauthorized" });
+    const body = await readJsonBody(req);
+    const out = await fetcher.probe(resolveProvider(body));
+    return sendJson(res, 200, out);
+  }
+
+  /* POST /api/admin/sync — fetch live results and merge them into the board. */
+  if (url === "/api/admin/sync" && method === "POST") {
+    if (!auth.isAdmin(req)) return sendJson(res, 401, { error: "unauthorized" });
+    const body = await readJsonBody(req);
+    const out = await fetcher.fetchLive(resolveProvider(body));
+    if (!out.ok) return sendJson(res, 200, out);
+    const board = state.read().state || {};
+    board.results = { ...(board.results || {}), ...(out.results || {}) };
+    const env = state.write(board);
+    return sendJson(res, 200, {
+      ok: true, rev: env.rev, applied: Object.keys(out.results || {}).length,
+    });
+  }
+
+  return sendJson(res, 404, { error: "not found" });
 }
 
 /* serve a static file from client/dist; SPA-fallback to index.html for unknown routes */
@@ -45,14 +255,40 @@ function serveStatic(req, res) {
   });
 }
 
-const server = http.createServer((req, res) => {
+/* ------------------------------------------------------------- request handler */
+
+function handler(req, res) {
   const url = (req.url || "/").split("?")[0];
+  const method = req.method || "GET";
+
+  // Health is ALWAYS open (Docker healthcheck must work behind the gate).
   if (url === "/api/health") return sendJson(res, 200, { status: "healthy" });
+
+  // The login endpoint must be reachable so viewers can authenticate.
+  if (url === "/api/viewer/login" && method === "POST") return handleViewerLogin(req, res);
+
+  // Viewer gate: block the site + API until a valid cookie is presented.
+  if (!viewerAuthed(req)) {
+    if (url.startsWith("/api/")) return sendJson(res, 401, { error: "viewer password required" });
+    return serveLoginPage(res, 401);
+  }
+
+  // Shared-board + admin API (viewer-authed past this point).
+  if (url.startsWith("/api/")) return handleApi(req, res, url, method);
+
   return serveStatic(req, res);
-});
+}
 
-server.listen(PORT, () => {
-  console.log(`⚽ Leo's World Cup server on http://0.0.0.0:${PORT}  (client: ${CLIENT_DIR})`);
-});
+function createServer() {
+  return http.createServer(handler);
+}
 
-module.exports = { server };
+const server = createServer();
+
+if (require.main === module) {
+  server.listen(PORT, () => {
+    console.log(`⚽ Leo's World Cup server on http://0.0.0.0:${PORT}  (client: ${CLIENT_DIR})`);
+  });
+}
+
+module.exports = { server, createServer, handler };

@@ -1,0 +1,100 @@
+<!doctype html>
+<html lang="en-GB">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <title>Leo's World Cup — Password</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Luckiest+Guy&family=Baloo+2:wght@500;700;800&display=swap" rel="stylesheet">
+  <style>
+    /* Standalone sticker-album login — mirrors client/src/styles/tokens.css. */
+    :root {
+      --ink: #1b2a4a; --cream: #fffdf3; --cream2: #fff6dd; --sun: #ffd23f;
+      --tomato: #ff5d5d; --blue: #36a9ff; --grass: #5fd35f;
+      --head: "Luckiest Guy", system-ui, sans-serif;
+      --body: "Baloo 2", system-ui, sans-serif;
+    }
+    * { box-sizing: border-box; }
+    html, body { height: 100%; margin: 0; }
+    body {
+      font-family: var(--body);
+      color: var(--ink);
+      background:
+        radial-gradient(circle at 18% 20%, rgba(255, 210, 63, .18), transparent 42%),
+        radial-gradient(circle at 82% 78%, rgba(54, 169, 255, .22), transparent 46%),
+        #1b2a4a;
+      display: grid;
+      place-items: center;
+      padding: 24px;
+      -webkit-font-smoothing: antialiased;
+    }
+    .card {
+      width: 100%;
+      max-width: 360px;
+      background: var(--cream);
+      border: 4px solid var(--ink);
+      border-radius: 26px;
+      box-shadow: 5px 6px 0 rgba(27, 42, 74, .92);
+      padding: 26px 24px 28px;
+      text-align: center;
+    }
+    .ball { font-size: 46px; line-height: 1; }
+    h1 {
+      font-family: var(--head);
+      font-weight: 400;
+      letter-spacing: 1px;
+      font-size: 30px;
+      line-height: .95;
+      margin: 10px 0 2px;
+    }
+    .sub { font-weight: 700; opacity: .8; margin: 0 0 20px; font-size: 15px; }
+    label { display: block; font-weight: 800; text-align: left; margin: 0 4px 6px; font-size: 14px; }
+    input[type="password"] {
+      font-family: var(--body);
+      font-weight: 700;
+      width: 100%;
+      font-size: 18px;
+      padding: 12px 14px;
+      border: 4px solid var(--ink);
+      border-radius: 14px;
+      background: var(--cream2);
+      color: var(--ink);
+      outline: none;
+    }
+    input[type="password"]:focus { background: #fff; box-shadow: 0 0 0 3px var(--sun); }
+    button {
+      font-family: var(--head);
+      font-weight: 400;
+      letter-spacing: .5px;
+      margin-top: 18px;
+      width: 100%;
+      font-size: 22px;
+      padding: 13px 16px;
+      border: 4px solid var(--ink);
+      border-radius: 16px;
+      background: var(--sun);
+      color: var(--ink);
+      cursor: pointer;
+      box-shadow: 3px 4px 0 rgba(27, 42, 74, .9);
+      -webkit-tap-highlight-color: transparent;
+    }
+    button:active { transform: translateY(2px); box-shadow: 1px 2px 0 rgba(27, 42, 74, .9); }
+    .foot { margin: 16px 4px 0; font-weight: 700; opacity: .65; font-size: 13px; }
+  </style>
+</head>
+<body>
+  <main class="card">
+    <div class="ball" aria-hidden="true">⚽</div>
+    <h1>Leo's World Cup</h1>
+    <p class="sub">Family viewers only</p>
+    <form method="POST" action="/api/viewer/login">
+      <label for="password">Enter the family password</label>
+      <input id="password" name="password" type="password" autocomplete="current-password"
+             autofocus required placeholder="••••••••">
+      <button type="submit">Let me in!</button>
+    </form>
+    <p class="foot">Ask a grown-up for the password.</p>
+  </main>
+</body>
+</html>
