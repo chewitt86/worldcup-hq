@@ -85,7 +85,7 @@ Browse to **`http://<TOWER-IP>:3050`**. You should see the sticker-album home sc
 Everything lives in `appdata/worldcup-hq/server/data/` (the shared board + your API key). It
 survives rebuilds and updates. Back up that folder (or use `./manage.sh backup`) before big changes.
 
-## Optional — a public web address (no port-forwarding)
-`docker-compose.yml` has a commented **Cloudflare Tunnel** service. Uncomment it, paste a tunnel
-token from Cloudflare Zero Trust, point the tunnel's public hostname at `worldcup-hq:3050`, and
-Compose Up again for free HTTPS on your own domain.
+## Optional — a public web address on your own domain
+Want `https://leosworldcup.co.uk` instead of an IP:port? See **[`docs/DOMAIN-SETUP.md`](DOMAIN-SETUP.md)**
+— a step-by-step Cloudflare Tunnel guide (free HTTPS, no router port-forwarding). Remember to set
+`VIEW_PASSWORD` once the site is internet-facing.
