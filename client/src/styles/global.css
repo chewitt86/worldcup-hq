@@ -1,0 +1,7 @@
+/* Global page chrome — ported from the prototype's entry HTML <style> block. */
+html, body { margin: 0; padding: 0; height: 100%; background: #1b2a4a; }
+#root { width: 100%; height: 100%; }
+body { overflow: hidden; }
+
+/* admin form controls inherit the friendly font */
+input, select, button, textarea { font-family: "Baloo 2", system-ui, sans-serif; }
