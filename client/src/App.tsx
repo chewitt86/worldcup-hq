@@ -124,11 +124,21 @@ function App() {
   const go = (next: string) => {
     if (!PAGES[next]) { ping(`🚧 Wobbles is still building ${next}!`); return; }
     setPage(next);
-    try { history.replaceState(null, '', '#' + next); } catch { /* hash update is best-effort */ }
+    try { if (location.hash.replace('#', '') !== next) location.hash = next; } catch { /* best-effort */ }
     if (scroller.current) scroller.current.scrollTop = 0;
     if (next !== 'Home') burst();
   };
   const openPerson = (p: Person) => setPerson(p);
+
+  // respond to hash changes (browser back/forward + direct #Page links)
+  useEffect(() => {
+    const onHash = () => {
+      const h = (location.hash || '').replace('#', '');
+      if (PAGES[h]) { setPage(h); if (scroller.current) scroller.current.scrollTop = 0; }
+    };
+    window.addEventListener('hashchange', onHash);
+    return () => window.removeEventListener('hashchange', onHash);
+  }, []);
 
   // welcome confetti
   useEffect(() => { const id = setTimeout(burst, 400); return () => clearTimeout(id); }, []);
