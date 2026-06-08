@@ -38,14 +38,27 @@ export function initials(name: string): string {
 }
 
 /* DERIVED team map: static TEAMS with any saved teamEdits layered on top.
-   Never mutates the imported TEAMS. */
+   Never mutates the imported TEAMS.
+
+   MEMOISED on the `teamEdits` object identity: `editTeam` always replaces
+   `teamEdits` with a new object, so caching on that reference returns a STABLE
+   result between edits. This is essential — `useStore(selectTeams)` runs on
+   useSyncExternalStore, which loops infinitely if the selector hands back a
+   fresh object every render. */
+type Edits = NonNullable<AppState['teamEdits']>;
+const EMPTY_EDITS: Edits = {};
+let _teamsKey: Edits | null = null;
+let _teamsVal: Record<string, Team> | null = null;
 export function selectTeams(state: AppState): Record<string, Team> {
-  const edits = state.teamEdits || {};
+  const edits = state.teamEdits ?? EMPTY_EDITS;
+  if (_teamsVal && _teamsKey === edits) return _teamsVal;
   const out: Record<string, Team> = {};
   for (const code of Object.keys(TEAMS)) {
     const patch = edits[code];
     out[code] = patch ? { ...TEAMS[code], ...patch } : TEAMS[code];
   }
+  _teamsKey = edits;
+  _teamsVal = out;
   return out;
 }
 

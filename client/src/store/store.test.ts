@@ -15,6 +15,19 @@ describe('store actions', () => {
     expect(s.getState().bracketNonce).toBe(n0 + 1);
   });
 
+  // Regression: selectTeams must return a STABLE reference between edits, or
+  // useStore(selectTeams) loops forever (useSyncExternalStore getSnapshot).
+  test('selectTeams returns a stable reference until teamEdits change', () => {
+    const s = createStore();
+    const a = selectTeams(s.getState());
+    const b = selectTeams(s.getState());
+    expect(a).toBe(b); // same object — no infinite render loop
+    s.getState().editTeam('BRA', { odds: '2/1' });
+    const c = selectTeams(s.getState());
+    expect(c).not.toBe(a); // recomputed after an edit
+    expect(c.BRA.odds).toBe('2/1');
+  });
+
   test('toggleOut adds then removes', () => {
     const s = createStore();
     const id = s.getState().people[0].id;
