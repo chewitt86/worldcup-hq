@@ -37,11 +37,9 @@ icon, top-right of the web UI) and run:
 mkdir -p /mnt/user/appdata/worldcup-hq && cd /mnt/user/appdata/worldcup-hq
 git clone https://github.com/chewitt86/worldcup-hq.git .
 ```
-Because the repo is **private**, Git will ask for a username + password — use your GitHub
-username and a **Personal Access Token** (GitHub → Settings → Developer settings → Tokens →
-*Fine-grained* or *classic* with **repo** read access) as the password.
-> Don't want the token hassle? The repo contains **no secrets** (passwords/keys are never
-> committed), so you *could* make it **Public** on GitHub and then the clone needs no login.
+The repo is **public**, so the clone (and all future `./manage.sh deploy` updates) need **no
+login or token**. It contains no secrets — your passwords/API key live only in `.env` and
+`server/data`, which are never committed.
 
 ## Step 4 — Create the password file (`.env`)
 In `appdata\worldcup-hq` (over SMB or via the terminal), copy `.env.example` to **`.env`** and set:

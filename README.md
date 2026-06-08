@@ -28,7 +28,7 @@ folder onto the server at `/mnt/user/appdata/worldcup-hq` (Git clone or SMB copy
 Browse to `http://<TOWER-IP>:3050`. The only folder that must persist is `server/data`.
 
 ## Develop here, deploy there (Git workflow)
-The repo is the source of truth (`github.com/chewitt86/worldcup-hq`, private).
+The repo is the source of truth (`github.com/chewitt86/worldcup-hq`, public — no secrets are committed).
 1. Develop locally (two terminals — Vite proxies `/api` to the server):
    ```bash
    PORT=3050 ADMIN_PASSWORD=1966 node server/server.js
