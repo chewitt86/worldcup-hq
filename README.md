@@ -52,6 +52,6 @@ the go-live notes in `CLAUDE.md`.*
 - `client/` — the Vite React+TS SPA (see `CLAUDE.md` for the source map).
 - `server/server.js` + `server/lib/*` — zero-dep server: static client, `/api/state`
   (shared board), viewer gate, `/api/admin/*`, live-data proxy.
-- `legacy/` — the previous single-file app, kept for reference (not built).
+- `docs/` — deployment guides (`UNRAID-SETUP.md`, `DOMAIN-SETUP.md`).
 
 No database, no external services required to run. Built with help from Claude Code.

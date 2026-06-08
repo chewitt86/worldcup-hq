@@ -4,10 +4,8 @@ A cartoon "sticker-album" World Cup 2026 tracker + family sweepstake. Mobile-fir
 React app with a shared family board so everyone sees the same scores. A PIN-gated
 admin console controls everything; an optional viewer password gates the whole site.
 
-This is a **rebuild** of an earlier zero-dependency single-file app (now kept, unbuilt,
-in `legacy/`) from the `design_handoff_leos_world_cup/` design package. See
-`docs/superpowers/specs/2026-06-07-leos-world-cup-architecture.md` and the plan in
-`docs/superpowers/plans/` for the full design + decisions.
+It's a React + TypeScript + Vite rebuild of an earlier zero-dependency single-file app,
+recreated from a design handoff (sticker-album look; shared state; live API-Football feed).
 
 ## Layout
 - `client/` — the React + TypeScript + Vite SPA (the whole UI). Pixel-faithful port of
@@ -19,7 +17,7 @@ in `legacy/`) from the `design_handoff_leos_world_cup/` design package. See
   Serves the built client and `/api`: the shared board (`/api/state`, revision envelope),
   the viewer gate, admin auth + masked provider keys (`/api/admin/*`), and the live-data
   proxy. Logic split into `server/lib/{state,auth,config,fetcher}.js`.
-- `legacy/` — the old app, kept for reference. **Not built.**
+- `docs/` — deployment guides (`UNRAID-SETUP.md`, `DOMAIN-SETUP.md`).
 - `Dockerfile` — multi-stage: build the client, then run the zero-dep server serving
   `client/dist` + `/api`. `docker-compose.yml`, `manage.sh`, `.env.example` at the root.
 - `server/data/` — runtime data (shared board `state.json`, API keys `admin.json`).

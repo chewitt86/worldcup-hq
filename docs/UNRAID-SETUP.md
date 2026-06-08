@@ -19,35 +19,41 @@ from this repo. End result: the site on `http://<TOWER-IP>:3050`, with a shared 
 2. Click **Install**. When it finishes, a **Compose** section appears at the bottom of the
    **Docker** tab.
 
-## Step 3 — Get the project folder onto the server
-The container is **built from source**, so the repo needs to live on the server, ideally at
-`/mnt/user/appdata/worldcup-hq`. Pick **one**:
+## Step 3 — Clone the project onto the server (Git)
+The container is **built from source**, so the repo needs to live on the server at
+`/mnt/user/appdata/worldcup-hq`. The repo is **public**, so this is login-free.
 
-**3a — Easiest (no Git): copy over the network (SMB).**
-1. On Windows, open File Explorer → address bar → `\\<TOWER-IP>\appdata` (enter your Unraid
-   login if asked).
-2. Copy your whole `worldcup-hq` folder into `appdata`, so you end up with
-   `appdata\worldcup-hq\` containing `Dockerfile`, `docker-compose.yml`, `client/`, `server/`, etc.
-   *(Tip: delete `client\node_modules` before copying — it's huge and the build re-creates it.)*
-   > Downside: future updates mean re-copying. With Git (3b) you update with one click/command.
-
-**3b — Recommended (Git, enables one-click updates).** Open the Unraid terminal (the **`>_`**
-icon, top-right of the web UI) and run:
-```bash
-mkdir -p /mnt/user/appdata/worldcup-hq && cd /mnt/user/appdata/worldcup-hq
-git clone https://github.com/chewitt86/worldcup-hq.git .
-```
-The repo is **public**, so the clone (and all future `./manage.sh deploy` updates) need **no
-login or token**. It contains no secrets — your passwords/API key live only in `.env` and
+1. Open the Unraid terminal — the **`>_`** icon at the top-right of the web UI.
+2. Run:
+   ```bash
+   git clone https://github.com/chewitt86/worldcup-hq.git /mnt/user/appdata/worldcup-hq
+   ```
+That's the whole code on the server, and later `./manage.sh deploy` pulls updates with **no
+token**. No secrets are in the repo — your passwords and API key live only in `.env` and
 `server/data`, which are never committed.
 
+> Prefer not to use Git? You can instead copy the folder to `\\<TOWER-IP>\appdata` over SMB
+> from Windows — but then updates mean re-copying rather than one command.
+
 ## Step 4 — Create the password file (`.env`)
-In `appdata\worldcup-hq` (over SMB or via the terminal), copy `.env.example` to **`.env`** and set:
+The repo ships a template called **`.env.example`** at the **top level** of the folder
+(`/mnt/user/appdata/worldcup-hq/.env.example`). It's a **dotfile** — the name starts with a `.` —
+so most file browsers **hide it by default** (that's why it can be hard to find). In a terminal
+it always shows with `ls -a`.
+
+Copy it to **`.env`** and set your passwords. In the Unraid terminal:
+```bash
+cd /mnt/user/appdata/worldcup-hq
+cp .env.example .env
+nano .env          # edit, then Ctrl+O Enter to save, Ctrl+X to exit
+```
+Set:
 ```ini
-ADMIN_PASSWORD=pick-a-good-one      # the in-app admin login
+ADMIN_PASSWORD=pick-a-good-one      # the in-app admin login (the ⚙️ cog)
 VIEW_PASSWORD=                       # optional: a shared password to gate the whole site
 ```
-(Leave `VIEW_PASSWORD` blank for an open site on your home LAN.)
+Leave `VIEW_PASSWORD` blank for an open site on your home LAN; **set it** once you put the app on
+a public domain (see the domain guide).
 
 ## Step 5 — Add the stack in the GUI
 1. **Docker** tab → scroll to **Compose** → **Add New Stack** → name it **`worldcup-hq`**.
@@ -73,13 +79,12 @@ Browse to **`http://<TOWER-IP>:3050`**. You should see the sticker-album home sc
 4. **Danger zone → 🚀 Prepare for kickoff** to clear the demo scores and start fresh.
 
 ## Updating later
-- **Git install (3b):** Unraid terminal →
-  ```bash
-  cd /mnt/user/appdata/worldcup-hq && ./manage.sh deploy
-  ```
-  (pulls the latest code, rebuilds, restarts) — or in the Compose Manager GUI use
-  **Update Stack** / **Compose Down → Up**.
-- **SMB copy (3a):** re-copy the changed files, then **Compose Up** again in the GUI.
+In the Unraid terminal:
+```bash
+cd /mnt/user/appdata/worldcup-hq && ./manage.sh deploy
+```
+That pulls the latest code, rebuilds the image, and restarts — no token needed. (Or, in the
+Compose Manager GUI: **Compose Down → Compose Up**.)
 
 ## Your data is safe
 Everything lives in `appdata/worldcup-hq/server/data/` (the shared board + your API key). It

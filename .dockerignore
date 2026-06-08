@@ -2,8 +2,6 @@
 **/node_modules
 client/dist
 server/data
-legacy
-design_handoff_leos_world_cup
 docs
 backups
 .git
