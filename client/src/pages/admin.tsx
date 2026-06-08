@@ -93,6 +93,7 @@ function AdminLogin({ onSuccess }: { onSuccess: (token: string) => void }) {
   const [val, setVal] = useState('');
   const [err, setErr] = useState(false);
   const [busy, setBusy] = useState(false);
+  const [show, setShow] = useState(false);
   const submit = async () => {
     if (busy) return;
     setBusy(true);
@@ -112,16 +113,21 @@ function AdminLogin({ onSuccess }: { onSuccess: (token: string) => void }) {
         animation: err ? 'wchq-wobble .3s 2' : 'none' }}>
         <div className="head" style={{ fontSize: 24 }}>🔒 GROWN-UPS ONLY</div>
         <div style={{ fontWeight: 700, fontSize: 13, opacity: .65, margin: '6px 0 16px' }}>
-          Enter the secret PIN to manage the sweepstake.</div>
-        <input value={val} onChange={(e) => setVal(e.target.value.replace(/\D/g, '').slice(0, 6))}
-          onKeyDown={(e) => e.key === 'Enter' && submit()}
-          inputMode="numeric" placeholder="••••" autoFocus
-          style={{ ...inputStyle, textAlign: 'center', fontFamily: 'var(--head)', fontSize: 30,
-            letterSpacing: '10px', borderColor: err ? 'var(--tomato)' : 'var(--ink)' }} />
+          Enter the admin password to manage the sweepstake.</div>
+        <div style={{ position: 'relative' }}>
+          <input value={val} onChange={(e) => setVal(e.target.value.slice(0, 64))}
+            onKeyDown={(e) => e.key === 'Enter' && submit()}
+            type={show ? 'text' : 'password'} placeholder="password" autoFocus autoComplete="current-password"
+            style={{ ...inputStyle, textAlign: 'center', fontFamily: 'var(--head)', fontSize: 20,
+              letterSpacing: '1px', paddingRight: 42, borderColor: err ? 'var(--tomato)' : 'var(--ink)' }} />
+          <span className="tap" onClick={() => setShow((s) => !s)} title={show ? 'Hide' : 'Show'}
+            style={{ position: 'absolute', right: 12, top: '50%', transform: 'translateY(-50%)', fontSize: 17, opacity: .65 }}>
+            {show ? '🙈' : '👁'}</span>
+        </div>
         <button onClick={submit} style={{ ...btn('var(--sun)'), width: '100%', marginTop: 14, fontSize: 16 }}>
           UNLOCK →</button>
         <div style={{ fontSize: 11, fontWeight: 600, opacity: .5, marginTop: 12 }}>
-          {err ? '❌ Wrong PIN — try again!' : 'psst… the demo PIN is 1966'}</div>
+          {err ? '❌ Wrong password — try again!' : 'Letters and numbers — set by ADMIN_PASSWORD.'}</div>
       </div>
     </div>
   );
