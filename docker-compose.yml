@@ -1,0 +1,49 @@
+services:
+  worldcup-hq:
+    build: .
+    image: worldcup-hq
+    container_name: worldcup-hq
+    ports:
+      - "3050:3050"            # change the LEFT number if 3050 is taken on your server
+    volumes:
+      - ./data:/app/data       # the shared board lives here (back this up)
+      # live editing (optional): change these on the server, no rebuild needed
+      - ./public:/app/public     # edit the site -> just refresh the browser
+      - ./server.js:/app/server.js   # edit -> `docker restart worldcup-hq`
+      - ./fetcher.js:/app/fetcher.js # edit -> `docker restart worldcup-hq`
+    environment:
+      - PORT=3050
+      - DATA_FILE=/app/data/state.json
+      - ADMIN_PASSWORD=${ADMIN_PASSWORD:-changeme}   # set in a .env file (git-ignored), not here
+
+      # ===================  FULLY AUTOMATIC RESULTS  ===================
+      # EASIEST: leave the key blank here and add it in the in-app ADMIN PANEL
+      # (tap 🔒, log in with ADMIN_PASSWORD, Test connection, Save). Or set it here:
+      # Free key: https://dashboard.api-football.com (free plan = 100 req/day)
+      - AUTOFETCH_ENABLED=true
+      - AUTOFETCH_PROVIDER=apifootball
+      - AUTOFETCH_INTERVAL_MIN=20      # 20 min ≈ 72 calls/day (under the free 100)
+      - APIFOOTBALL_KEY=${APIFOOTBALL_KEY:-}          # optional; better to set in the Admin panel or .env
+      - APIFOOTBALL_LEAGUE=1           # 1 = FIFA World Cup
+      - APIFOOTBALL_SEASON=2026
+      - APIFOOTBALL_RAPIDAPI=false     # set true ONLY if you got the key via RapidAPI
+
+      # --- alternatives (leave as-is unless you switch AUTOFETCH_PROVIDER) ---
+      - AUTOFETCH_URL=
+      - WC2026_BASE=
+      - WC2026_TOKEN=
+    restart: unless-stopped
+
+  # ============================================================================
+  # OPTIONAL — expose the site on your own domain via Cloudflare Tunnel
+  # (no router port-forwarding, free HTTPS). Steps:
+  #   1) Cloudflare dashboard -> Zero Trust -> Networks -> Tunnels
+  #      -> Create a tunnel -> Cloudflared -> name it -> copy the TOKEN
+  #   2) Uncomment the service below, paste the token, then Compose Up again
+  #   3) In the tunnel's "Public Hostname" tab add e.g. worldcup.yourdomain.com
+  #      -> Service: HTTP  ->  URL:  worldcup-hq:3050
+  # cloudflared:
+  #   image: cloudflare/cloudflared:latest
+  #   container_name: cloudflared
+  #   restart: unless-stopped
+  #   command: tunnel --no-autoupdate run --token PASTE_YOUR_TUNNEL_TOKEN
