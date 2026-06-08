@@ -5,10 +5,20 @@
    MatchPopup open from a team row / a results-strip score chip. OwnerIcons is a
    small page-local helper, matching the prototype's per-page definition. */
 
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 import { useApp } from '../app/context';
-import { GROUPS, GROUP_RESULTS, ELIMINATED, table, backers } from '../data/tournament';
+import { useStore } from '../store/store';
+import {
+  GROUPS,
+  GROUP_FIXTURES,
+  ELIMINATED,
+  table,
+  computeStandings,
+  backers,
+  type Standing,
+} from '../data/tournament';
 import { type Person } from '../data/teams';
+import type { SavedResult } from '../lib/bracket';
 import { Flag } from '../components/flag';
 import { Avatar } from '../components/avatar';
 import { PageTitle } from '../components/labels';
@@ -48,14 +58,18 @@ function GroupTable({
   onTeam,
   onMatch,
   people,
+  standings,
+  results,
 }: {
   g: string;
   onTeam: (code: string) => void;
   onMatch: (m: Match) => void;
   people: Person[];
+  standings: Record<string, Standing>;
+  results: Record<string, SavedResult>;
 }) {
-  const rows = table(g);
-  const results = GROUP_RESULTS[g] || [];
+  const rows = table(g, standings);
+  const fixtures = GROUP_FIXTURES[g] || [];
   return (
     <div className="sticker" style={{ padding: 0, overflow: 'hidden' }}>
       {/* header */}
@@ -105,17 +119,26 @@ function GroupTable({
         );
       })}
 
-      {/* results strip — tap a result for the match card */}
+      {/* results strip — tap a fixture for the match card (score if played, else "vs") */}
       <div style={{ background: 'var(--ink)', padding: '9px 12px', display: 'flex',
         flexWrap: 'wrap', gap: 8 }}>
-        {results.map((m, i) => (
-          <span key={i} className="head tap" onClick={() => onMatch({ a: m.a, b: m.b, label: 'Group ' + g,
-            played: true, score: [m.as, m.bs], winner: m.as > m.bs ? m.a : m.bs > m.as ? m.b : undefined })}
-            style={{ fontSize: 12, color: 'var(--cream)', background: 'rgba(255,255,255,.08)',
-              border: '2px solid #2c3f66', borderRadius: 8, padding: '3px 8px' }}>
-            {m.a} <span style={{ color: 'var(--sun)' }}>{m.as}–{m.bs}</span> {m.b}
-          </span>
-        ))}
+        {fixtures.map((fx) => {
+          const r = results[fx.id];
+          const played = !!(r && r.played);
+          const [as, bs] = played ? r!.score : [0, 0];
+          const match: Match = played
+            ? { a: fx.a, b: fx.b, label: 'Group ' + g, played: true, score: [as, bs],
+                winner: as > bs ? fx.a : bs > as ? fx.b : undefined }
+            : { a: fx.a, b: fx.b, label: 'Group ' + g, played: false };
+          return (
+            <span key={fx.id} className="head tap" onClick={() => onMatch(match)}
+              style={{ fontSize: 12, color: 'var(--cream)', background: 'rgba(255,255,255,.08)',
+                border: '2px solid #2c3f66', borderRadius: 8, padding: '3px 8px' }}>
+              {fx.a} <span style={{ color: played ? 'var(--sun)' : '#7fa8e6' }}>
+                {played ? `${as}–${bs}` : 'vs'}</span> {fx.b}
+            </span>
+          );
+        })}
       </div>
     </div>
   );
@@ -125,6 +148,8 @@ export function GroupsPage() {
   const app = useApp();
   const wide = app.wide;
   const people = app.people;
+  const results = useStore((s) => s.results);
+  const standings = useMemo(() => computeStandings(results), [results]);
   const [team, setTeam] = useState<string | null>(null);
   const [match, setMatch] = useState<Match | null>(null);
   const groups = Object.keys(GROUPS);
@@ -134,7 +159,8 @@ export function GroupsPage() {
       <PageTitle sub="👑 = leader · tap a score for the match · faded = out" accent="var(--mint)">GROUPS</PageTitle>
       <div style={{ display: 'grid', gap: 14, gridTemplateColumns: wide ? '1fr 1fr' : '1fr' }}>
         {groups.map((g) => (
-          <GroupTable key={g} g={g} onTeam={setTeam} onMatch={setMatch} people={people} />
+          <GroupTable key={g} g={g} onTeam={setTeam} onMatch={setMatch} people={people}
+            standings={standings} results={results} />
         ))}
       </div>
       {team && <TeamPopup code={team} onClose={() => setTeam(null)} onPerson={app.openPerson} />}

@@ -27,6 +27,7 @@ import { Avatar } from '../components/avatar';
 import { Flag } from '../components/flag';
 import { PageTitle } from '../components/labels';
 import { ApiConnections } from '../components/admin/api-connections';
+import { GroupResults } from '../components/admin/group-results';
 import { KnockoutResults } from '../components/admin/knockout-results';
 import { TeamDataEditor } from '../components/admin/team-data-editor';
 
@@ -285,7 +286,8 @@ function AdminDashboard({ token, onLogout }: { token: string; onLogout: () => vo
 
         {/* EDIT TEAM DATA */}
         <TeamDataEditor token={token} />
-        {/* RESULTS MANAGER */}
+        {/* RESULTS MANAGERS */}
+        <GroupResults token={token} />
         <KnockoutResults token={token} />
       </div>
     </Fragment>

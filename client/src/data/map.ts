@@ -8,7 +8,7 @@
    All values, logic and numbers are identical to the prototype. */
 
 import { TEAMS, type Team } from './teams';
-import { GROUPS, GROUP_RESULTS, groupOf } from './tournament';
+import { GROUPS, GROUP_FIXTURES, groupOf } from './tournament';
 import { buildBracket, type Tie, type SavedResult } from '../lib/bracket';
 
 /* ---- types ---- */
@@ -182,7 +182,7 @@ export function stageRoutes(
       teams: Object.keys(ROUTES),
       routeOf: ROUTES,
       matches: Object.keys(GROUPS).flatMap((g) =>
-        (GROUP_RESULTS[g] || []).map((m) => ({
+        (GROUP_FIXTURES[g] || []).map((m) => ({
           a: m.a,
           b: m.b,
           venue: ROUTES[m.a]?.[0],
@@ -224,12 +224,14 @@ export function teamGames(code: string, stage: MapStage, results: ResultsMap = {
   if (stage === 'Groups') {
     const g = groupOf(code);
     const venues = ROUTES[code] || [];
-    return (g ? GROUP_RESULTS[g] || [] : [])
+    return (g ? GROUP_FIXTURES[g] || [] : [])
       .filter((m) => m.a === code || m.b === code)
       .map((m, idx) => {
         const opp = m.a === code ? m.b : m.a;
-        const us = m.a === code ? m.as : m.bs;
-        const them = m.a === code ? m.bs : m.as;
+        const r = results[m.id];
+        const played = !!(r && r.played);
+        const us = played ? (m.a === code ? r!.score[0] : r!.score[1]) : null;
+        const them = played ? (m.a === code ? r!.score[1] : r!.score[0]) : null;
         const venue = venues[idx % venues.length] || venues[0];
         return {
           opp,
@@ -237,9 +239,9 @@ export function teamGames(code: string, stage: MapStage, results: ResultsMap = {
           city: VENUES[venue]?.city,
           host: VENUES[venue]?.host,
           label: 'Group ' + g,
-          played: true,
-          score: [us, them] as [number, number],
-          result: us > them ? 'W' : us < them ? 'L' : 'D',
+          played,
+          score: played ? ([us, them] as [number, number]) : null,
+          result: played ? (us! > them! ? 'W' : us! < them! ? 'L' : 'D') : null,
           date: null,
           time: null,
         };

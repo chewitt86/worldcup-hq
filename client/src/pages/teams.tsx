@@ -2,15 +2,15 @@
    Ported from home/page-teams.jsx. Team display data is read through the
    store's `selectTeams` selector so admin team-edits propagate live. */
 
-import { Fragment, useState } from 'react';
+import { Fragment, useMemo, useState } from 'react';
 import { useApp } from '../app/context';
 import { useStore, selectTeams } from '../store/store';
 import type { Person } from '../data/teams';
 import {
   ELIMINATED,
   groupOf,
-  STANDINGS,
-  GROUP_RESULTS,
+  computeStandings,
+  GROUP_FIXTURES,
   backers,
   oddsNum,
 } from '../data/tournament';
@@ -74,13 +74,19 @@ function TeamPopup({
   onPerson?: (p: Person) => void;
 }) {
   const teams = useStore(selectTeams);
+  const storeResults = useStore((s) => s.results);
+  const standings = useMemo(() => computeStandings(storeResults), [storeResults]);
   const { people } = useApp();
   if (!code) return null;
   const t = teams[code];
   const g = groupOf(code) as string;
-  const st = STANDINGS[code];
+  const st = standings[code];
   const dead = ELIMINATED.includes(code);
-  const results = (GROUP_RESULTS[g] || []).filter((r) => r.a === code || r.b === code);
+  const results = (GROUP_FIXTURES[g] || [])
+    .filter((fx) => fx.a === code || fx.b === code)
+    .map((fx) => ({ fx, r: storeResults[fx.id] }))
+    .filter(({ r }) => r && r.played)
+    .map(({ fx, r }) => ({ a: fx.a, b: fx.b, as: r!.score[0], bs: r!.score[1] }));
 
   return (
     <div onClick={onClose} style={{ position: "absolute", inset: 0, zIndex: 80,

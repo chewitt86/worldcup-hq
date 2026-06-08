@@ -1,7 +1,11 @@
-/* World Cup HQ — tournament data: 12 groups, generated round-robin results and
-   standings, plus the small derived helpers (table/groupOf/backers/isAlive).
-   Groups reflect the real 2026 World Cup final draw (48 teams / 12 groups).
-   The standings model is still generated from odds — pure, no window. */
+/* World Cup HQ — tournament data: 12 groups, round-robin fixtures, and standings
+   COMPUTED from saved results, plus the small derived helpers
+   (table/groupOf/backers/isAlive). Groups reflect the real 2026 World Cup final
+   draw (48 teams / 12 groups). Pure, no window.
+
+   Group results live in the SAME store `results` map as knockout results, keyed
+   `"<GROUP>:<i>"` (e.g. "A:0".."A:5"). Standings are derived from those results,
+   so an empty results map yields a correct all-zero pre-tournament table. */
 
 import { TEAMS, PEOPLE, type Person } from './teams';
 
@@ -15,15 +19,15 @@ export interface Standing {
   pts: number;
 }
 
-export interface GroupResult {
-  a: string;
-  b: string;
-  as: number;
-  bs: number;
-}
-
 export interface TableRow extends Standing {
   code: string;
+}
+
+/* A saved result (group or knockout). `score` is [home, away] aligned to the
+   fixture's [a, b]; only `played` results affect standings. */
+export interface SavedResult {
+  score: [number, number];
+  played: boolean;
 }
 
 /* ---- 12 groups of 4 (real 2026 final-draw line-ups) ---- */
@@ -42,71 +46,65 @@ export const GROUPS: Record<string, string[]> = {
   L: ['ENG', 'CRO', 'GHA', 'PAN'],
 };
 
-/* ---- teams knocked OUT so far (= union of everyone's sweepstake outs) ---- */
-export const ELIMINATED: string[] = ['JPN', 'CAN', 'GHA', 'POR', 'GER'];
+/* ---- teams knocked OUT so far. Clean slate at kick-off; eliminations are
+   tracked per-person (Person.out), not statically here. ---- */
+export const ELIMINATED: string[] = [];
 
 export function oddsNum(code: string): number {
   const o = (TEAMS[code] && TEAMS[code].odds) || '999/1';
   return parseInt(o.split('/')[0], 10) || 999;
 }
 
-// strength used to generate scores: lower odds = stronger; eliminated heavily penalised
-export function scoreStrength(code: string): number {
-  return -oddsNum(code) - (ELIMINATED.includes(code) ? 600 : 0);
-}
-
-/* ---- generate full round-robin results per group from strength ---- */
-export function gscore(a: string, b: string): [number, number] {
-  const d = scoreStrength(a) - scoreStrength(b);
-  if (d > 300) return [3, 0];
-  if (d > 120) return [2, 0];
-  if (d > 30) return [2, 1];
-  if (d > -30) return [1, 1];
-  if (d > -120) return [1, 2];
-  if (d > -300) return [0, 2];
-  return [0, 3];
-}
-
+/* round-robin pairing order (4 teams → 6 matches) */
 export const RR: [number, number][] = [[0, 1], [2, 3], [0, 2], [1, 3], [0, 3], [1, 2]];
 
-export const GROUP_RESULTS: Record<string, GroupResult[]> = {};
+/* ---- round-robin fixtures per group; id = `${group}:${i}` (i = RR index) ---- */
+export const GROUP_FIXTURES: Record<string, { id: string; a: string; b: string }[]> = {};
 Object.keys(GROUPS).forEach((g) => {
   const t = GROUPS[g];
-  GROUP_RESULTS[g] = RR.map(([i, j]) => {
-    const [as, bs] = gscore(t[i], t[j]);
-    return { a: t[i], b: t[j], as, bs };
-  });
+  GROUP_FIXTURES[g] = RR.map(([i, j], k) => ({ id: `${g}:${k}`, a: t[i], b: t[j] }));
 });
 
-/* ---- compute standings from those results ---- */
-export const STANDINGS: Record<string, Standing> = {};
-Object.keys(GROUPS).forEach((g) => {
-  GROUPS[g].forEach((c) => (STANDINGS[c] = { p: 0, w: 0, d: 0, l: 0, gf: 0, ga: 0, pts: 0 }));
-  GROUP_RESULTS[g].forEach((m) => {
-    const A = STANDINGS[m.a];
-    const B = STANDINGS[m.b];
-    A.p++;
-    B.p++;
-    A.gf += m.as;
-    A.ga += m.bs;
-    B.gf += m.bs;
-    B.ga += m.as;
-    if (m.as > m.bs) {
-      A.w++;
-      B.l++;
-      A.pts += 3;
-    } else if (m.as < m.bs) {
-      B.w++;
-      A.l++;
-      B.pts += 3;
-    } else {
-      A.d++;
-      B.d++;
-      A.pts++;
-      B.pts++;
-    }
+/* ---- compute standings from saved group results (pure). Initialises ALL 48
+   teams to zero; only `played` fixtures accumulate. ---- */
+export function computeStandings(results: Record<string, SavedResult>): Record<string, Standing> {
+  const st: Record<string, Standing> = {};
+  Object.keys(GROUPS).forEach((g) => {
+    GROUPS[g].forEach((c) => {
+      st[c] = { p: 0, w: 0, d: 0, l: 0, gf: 0, ga: 0, pts: 0 };
+    });
   });
-});
+  Object.keys(GROUP_FIXTURES).forEach((g) => {
+    GROUP_FIXTURES[g].forEach((fx) => {
+      const r = results[fx.id];
+      if (!r || !r.played) return;
+      const [as, bs] = r.score;
+      const A = st[fx.a];
+      const B = st[fx.b];
+      A.p++;
+      B.p++;
+      A.gf += as;
+      A.ga += bs;
+      B.gf += bs;
+      B.ga += as;
+      if (as > bs) {
+        A.w++;
+        B.l++;
+        A.pts += 3;
+      } else if (as < bs) {
+        B.w++;
+        A.l++;
+        B.pts += 3;
+      } else {
+        A.d++;
+        B.d++;
+        A.pts++;
+        B.pts++;
+      }
+    });
+  });
+  return st;
+}
 
 export function isAlive(code: string): boolean {
   return !ELIMINATED.includes(code);
@@ -120,8 +118,18 @@ export function groupOf(code: string): string | undefined {
   return Object.keys(GROUPS).find((g) => GROUPS[g].includes(code));
 }
 
-export function table(g: string): TableRow[] {
+const ZERO: Standing = { p: 0, w: 0, d: 0, l: 0, gf: 0, ga: 0, pts: 0 };
+
+/* group table sorted by pts, then GD, then GF, then (tiebreak) shorter odds —
+   so a pre-tournament all-zero table still orders by odds. */
+export function table(g: string, standings: Record<string, Standing>): TableRow[] {
   return GROUPS[g]
-    .map((c) => ({ code: c, ...STANDINGS[c] }))
-    .sort((x, y) => y.pts - x.pts || (y.gf - y.ga) - (x.gf - x.ga) || y.gf - x.gf);
+    .map((c) => ({ code: c, ...(standings[c] || ZERO) }))
+    .sort(
+      (x, y) =>
+        y.pts - x.pts ||
+        (y.gf - y.ga) - (x.gf - x.ga) ||
+        y.gf - x.gf ||
+        oddsNum(x.code) - oddsNum(y.code),
+    );
 }
