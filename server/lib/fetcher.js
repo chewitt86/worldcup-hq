@@ -246,6 +246,82 @@ function normaliseKnockout(responseArray) {
 }
 
 /* ---------------------------------------------------------------------------
+ * normaliseFixtures — PURE: API-Football `response[]` → the shared board's
+ * full-schedule Fixture[]. Maps EVERY fixture (group AND knockout, played or
+ * not) to:
+ *   { id, ts, stage, label, venue, a, b, as, bs, played }
+ *   - id     the feed's fixture id (stable), as a string.
+ *   - ts     kickoff time in UNIX MILLISECONDS (timestamp*1000, else Date.parse).
+ *   - stage  group letter "A".."L" for group games, else R32/R16/QF/SF/Final/Third.
+ *   - label  human round name ("Group A" / "Round of 32" / "Final" / …).
+ *   - venue  host city (venue.city || venue.name), '' when unknown.
+ *   - a, b   home/away internal 3-letter CODE, or '' when the team isn't decided.
+ *   - as, bs goals as Numbers when present, else null.
+ *   - played true once the status is FT/AET/PEN.
+ * Fixtures we can't place on the schedule (unclassifiable rounds) are skipped.
+ * Returns the array sorted by ts ascending, or [] when none.
+ * ------------------------------------------------------------------------- */
+const KO_STAGE = { R32: "R32", R16: "R16", QF: "QF", SF: "SF", Final: "Final", third: "Third" };
+const KO_LABEL = {
+  R32: "Round of 32", R16: "Round of 16", QF: "Quarter-final",
+  SF: "Semi-final", Final: "Final", third: "Third place play-off",
+};
+
+/* round string → { stage, label } for the schedule, or null when unplaceable. */
+function stageAndLabel(roundStr) {
+  const cls = classifyRound(roundStr);
+  if (cls === "group") {
+    const m = /group\s+([a-l])/i.exec(roundStr || "");
+    const letter = m ? m[1].toUpperCase() : "";
+    return { stage: letter, label: letter ? `Group ${letter}` : "Group" };
+  }
+  if (cls in KO_STAGE) return { stage: KO_STAGE[cls], label: KO_LABEL[cls] };
+  return null; // group/KO only — "other" can't be placed on the schedule
+}
+
+function normaliseFixtures(responseArray) {
+  const out = [];
+
+  (Array.isArray(responseArray) ? responseArray : []).forEach((f) => {
+    const fx = f && f.fixture ? f.fixture : {};
+    const lg = f && f.league ? f.league : {};
+    const sl = stageAndLabel(lg.round);
+    if (!sl) return; // skip rounds we can't place (e.g. "other")
+
+    const ts = fx.timestamp != null
+      ? Number(fx.timestamp) * 1000
+      : (fx.date ? Date.parse(fx.date) : 0);
+
+    const venue = (fx.venue && (fx.venue.city || fx.venue.name)) || "";
+
+    const homeName = f.teams && f.teams.home ? f.teams.home.name : null;
+    const awayName = f.teams && f.teams.away ? f.teams.away.name : null;
+    const a = teamCode(homeName) || "";
+    const b = teamCode(awayName) || "";
+
+    const short = fx.status ? fx.status.short : "";
+    const played = ["FT", "AET", "PEN"].includes(short);
+
+    const hg = f.goals ? f.goals.home : null;
+    const ag = f.goals ? f.goals.away : null;
+    const as = hg != null ? Number(hg) : null;
+    const bs = ag != null ? Number(ag) : null;
+
+    out.push({
+      id: fx.id != null ? String(fx.id) : "",
+      ts,
+      stage: sl.stage,
+      label: sl.label,
+      venue,
+      a, b, as, bs, played,
+    });
+  });
+
+  out.sort((x, y) => x.ts - y.ts);
+  return out;
+}
+
+/* ---------------------------------------------------------------------------
  * Live-data proxy. Takes a fully-resolved provider config (server-side, so it
  * may carry the secret `key`):
  *   { name, baseUrl, authHeader, path?, key, league?, season?, host? }
@@ -293,15 +369,16 @@ async function apiFootballFetch(provider) {
   return { ok: true, data };
 }
 
-/* fetchLive — pull the tournament from a provider and normalise both group
- * results AND knockout ties into the board shape. Returns
- * { ok:true, results, koLive, applied, unmatched } or { ok:false, reason }. */
+/* fetchLive — pull the tournament from a provider and normalise the group
+ * results, knockout ties AND the full schedule into the board shape. Returns
+ * { ok:true, results, koLive, fixtures, applied, unmatched } or { ok:false, reason }. */
 async function fetchLive(provider) {
   const fetched = await apiFootballFetch(provider);
   if (!fetched.ok) return fetched;
   const { results, applied, unmatched } = normaliseGroupResults(fetched.data.response);
   const koLive = normaliseKnockout(fetched.data.response);
-  return { ok: true, results, koLive, applied, unmatched };
+  const fixtures = normaliseFixtures(fetched.data.response);
+  return { ok: true, results, koLive, fixtures, applied, unmatched };
 }
 
 /* probe — the admin "Test connection" button. Runs a real fetch via fetchLive
@@ -320,6 +397,6 @@ async function probe(provider) {
 
 module.exports = {
   fetchLive, probe, teamId, teamCode, norm, classifyRound,
-  allGroupFixtures, normaliseGroupResults, normaliseKnockout,
+  allGroupFixtures, normaliseGroupResults, normaliseKnockout, normaliseFixtures,
   GROUPS, CODES, TEAMS, _norm: norm,
 };

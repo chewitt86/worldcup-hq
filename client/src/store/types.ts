@@ -86,6 +86,28 @@ export interface KoLive {
   Final: KoTie[];
 }
 
+/* ---- schedule fixtures ----
+   A single match in the day-by-day schedule, as supplied by the feed. `a`/`b`
+   are our internal 3-letter team CODES ('' when a knockout slot's team isn't
+   decided yet); `as`/`bs` are their goals (null until played). `ts` is the
+   kick-off time in UNIX MILLISECONDS — the client derives the calendar day and
+   BST kick-off time from it at render time. */
+export interface Fixture {
+  id: string;
+  ts: number;
+  /* group letter "A".."L", else "R32"/"R16"/"QF"/"SF"/"Final"/"Third". */
+  stage: string;
+  /* human round name, e.g. "Group A" / "Round of 32" / "Final". */
+  label: string;
+  /* host city string (e.g. "New York"); '' if unknown. */
+  venue: string;
+  a: string;
+  b: string;
+  as: number | null;
+  bs: number | null;
+  played: boolean;
+}
+
 /* The whole shared board. */
 export interface AppState {
   settings: Settings;
@@ -96,4 +118,6 @@ export interface AppState {
   bracketNonce: number;
   /* live knockout results from the feed; null until a feed reports any. */
   koLive?: KoLive | null;
+  /* day-by-day schedule from the feed; empty until a feed reports any. */
+  fixtures: Fixture[];
 }

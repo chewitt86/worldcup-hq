@@ -27,6 +27,7 @@ function envFrom(
     teamEdits: { ...s.teamEdits },
     results: { ...s.results },
     bracketNonce: s.bracketNonce,
+    fixtures: s.fixtures,
   };
   mutate?.(state);
   return { rev, updatedAt: new Date().toISOString(), state };

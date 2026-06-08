@@ -277,6 +277,7 @@ export function createStore(): StoreApi<StoreState> {
         results: fresh.results,
         bracketNonce: fresh.bracketNonce,
         koLive: fresh.koLive ?? null,
+        fixtures: fresh.fixtures ?? [],
       });
     },
   }));

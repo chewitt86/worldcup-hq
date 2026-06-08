@@ -2,7 +2,7 @@ const { test } = require('node:test');
 const assert = require('node:assert/strict');
 const {
   teamId, teamCode, probe, norm, classifyRound,
-  allGroupFixtures, normaliseGroupResults, normaliseKnockout,
+  allGroupFixtures, normaliseGroupResults, normaliseKnockout, normaliseFixtures,
 } = require('./fetcher');
 
 /* Build an API-Football-shaped fixture object for the tests. */
@@ -188,6 +188,85 @@ test('normaliseKnockout returns null when there are no knockout ties', () => {
     normaliseKnockout([koFixture('Brazil', 'Spain', 1, 0, { round: '3rd Place Final' })]),
     null,
   );
+});
+
+/* ----------------------------- normaliseFixtures ------------------------- */
+
+/* A full-schedule-shaped fixture: id, timestamp (seconds), venue + status. */
+function schedFixture({
+  id, home, away, hg = null, ag = null, round = 'Group A',
+  short = 'NS', timestamp = 0, city = '', name = '',
+}) {
+  return {
+    fixture: { id, timestamp, status: { short }, venue: { city, name } },
+    league: { round },
+    teams: { home: { name: home }, away: { name: away } },
+    goals: { home: hg, away: ag },
+  };
+}
+
+test('normaliseFixtures maps a finished group game to a Fixture', () => {
+  const [fx] = normaliseFixtures([
+    schedFixture({ id: 11, home: 'Mexico', away: 'South Africa', hg: 2, ag: 1, round: 'Group A', short: 'FT', timestamp: 1000, city: 'Mexico City' }),
+  ]);
+  assert.deepEqual(fx, {
+    id: '11', ts: 1000000, stage: 'A', label: 'Group A', venue: 'Mexico City',
+    a: 'MEX', b: 'RSA', as: 2, bs: 1, played: true,
+  });
+});
+
+test('normaliseFixtures keeps an upcoming group game with null scores, played:false', () => {
+  const [fx] = normaliseFixtures([
+    schedFixture({ id: 22, home: 'Canada', away: 'Switzerland', round: 'Group B', short: 'NS', timestamp: 2000, city: 'Toronto' }),
+  ]);
+  assert.deepEqual(fx, {
+    id: '22', ts: 2000000, stage: 'B', label: 'Group B', venue: 'Toronto',
+    a: 'CAN', b: 'SUI', as: null, bs: null, played: false,
+  });
+});
+
+test('normaliseFixtures uses "" for an undecided knockout side (TBD)', () => {
+  const [fx] = normaliseFixtures([
+    schedFixture({ id: 33, home: 'Brazil', away: 'Winner Group X', round: 'Round of 32', short: 'NS', timestamp: 500, city: 'New York' }),
+  ]);
+  assert.deepEqual(fx, {
+    id: '33', ts: 500000, stage: 'R32', label: 'Round of 32', venue: 'New York',
+    a: 'BRA', b: '', as: null, bs: null, played: false,
+  });
+});
+
+test('normaliseFixtures returns a mixed schedule sorted by ts ascending', () => {
+  const fixtures = normaliseFixtures([
+    schedFixture({ id: 22, home: 'Canada', away: 'Switzerland', round: 'Group B', short: 'NS', timestamp: 2000, city: 'Toronto' }),
+    schedFixture({ id: 11, home: 'Mexico', away: 'South Africa', hg: 2, ag: 1, round: 'Group A', short: 'FT', timestamp: 1000, city: 'Mexico City' }),
+    schedFixture({ id: 33, home: 'Brazil', away: 'Winner Group X', round: 'Round of 32', short: 'NS', timestamp: 500, city: 'New York' }),
+  ]);
+  assert.deepEqual(fixtures.map((f) => f.id), ['33', '11', '22']);
+  assert.deepEqual(fixtures.map((f) => f.ts), [500000, 1000000, 2000000]);
+  assert.deepEqual(fixtures.map((f) => f.stage), ['R32', 'A', 'B']);
+});
+
+test('normaliseFixtures falls back to venue.name when no city, and Date.parse when no timestamp', () => {
+  const [fx] = normaliseFixtures([
+    {
+      fixture: { id: 44, date: '2026-06-12T19:00:00+00:00', status: { short: 'NS' }, venue: { name: 'MetLife Stadium' } },
+      league: { round: 'Final' },
+      teams: { home: { name: 'Argentina' }, away: { name: 'France' } },
+      goals: { home: null, away: null },
+    },
+  ]);
+  assert.equal(fx.venue, 'MetLife Stadium');
+  assert.equal(fx.stage, 'Final');
+  assert.equal(fx.label, 'Final');
+  assert.equal(fx.ts, Date.parse('2026-06-12T19:00:00+00:00'));
+  assert.deepEqual([fx.a, fx.b], ['ARG', 'FRA']);
+});
+
+test('normaliseFixtures returns [] when there are no placeable fixtures', () => {
+  assert.deepEqual(normaliseFixtures([]), []);
+  assert.deepEqual(normaliseFixtures(null), []);
+  // an unclassifiable round can't be placed on the schedule
+  assert.deepEqual(normaliseFixtures([schedFixture({ id: 9, home: 'Brazil', away: 'Spain', round: 'Friendly' })]), []);
 });
 
 test('group and knockout normalise independently from the same response', () => {

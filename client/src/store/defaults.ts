@@ -75,4 +75,5 @@ export const DEFAULTS: AppState = {
   results: {}, // { "stage:index": { score:[a,b], played:true } }
   bracketNonce: 0, // bumps when odds change so the bracket re-seeds
   koLive: null, // live knockout ties from the feed; null until any are reported
+  fixtures: [], // day-by-day schedule from the feed; empty until any are reported
 };

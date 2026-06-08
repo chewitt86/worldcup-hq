@@ -19,7 +19,7 @@ export function TopNav({
   onLogo?: () => void;
   onAdmin?: () => void;
 }) {
-  const items = ['Home', 'Sweepstake', 'Teams', 'Groups', 'Knockout', 'Map'];
+  const items = ['Home', 'Schedule', 'Sweepstake', 'Teams', 'Groups', 'Knockout', 'Map'];
   const mobile = device === 'mobile';
   return (
     <div style={{ display: 'flex', alignItems: 'center', gap: 12, width: '100%' }}>

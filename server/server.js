@@ -171,12 +171,15 @@ function resolveProvider(body) {
 
 /* Merge a feed patch into the shared board (seeding an empty board if none):
  * merge group results, REPLACE board.koLive when the feed carries knockout ties
- * (a null koLive leaves any existing projection-driving value untouched), stamp
- * settings.lastSync, and persist via state.write (bumps rev). */
-function mergeResultsIntoBoard(results, koLive) {
+ * (a null koLive leaves any existing projection-driving value untouched),
+ * REPLACE board.fixtures when the feed carries a non-empty full schedule (an
+ * empty array leaves any existing schedule untouched), stamp settings.lastSync,
+ * and persist via state.write (bumps rev). */
+function mergeResultsIntoBoard(results, koLive, fixtures) {
   const board = state.read().state || {};
   board.results = { ...(board.results || {}), ...(results || {}) };
   if (koLive) board.koLive = koLive;
+  if (Array.isArray(fixtures) && fixtures.length) board.fixtures = fixtures;
   board.settings = board.settings || {};
   board.settings.lastSync = new Date().toISOString();
   return state.write(board);
@@ -198,7 +201,7 @@ async function pollOnce() {
     if (!provider || !provider.key) return;
     const out = await fetcher.fetchLive(provider);
     if (!out || !out.ok) return;
-    mergeResultsIntoBoard(out.results, out.koLive);
+    mergeResultsIntoBoard(out.results, out.koLive, out.fixtures);
   } catch (e) {
     /* swallow — the poller must never crash the server loop */
   }
@@ -275,7 +278,7 @@ async function handleApi(req, res, url, method) {
     const body = await readJsonBody(req);
     const out = await fetcher.fetchLive(resolveProvider(body));
     if (!out.ok) return sendJson(res, 200, out);
-    const env = mergeResultsIntoBoard(out.results, out.koLive);
+    const env = mergeResultsIntoBoard(out.results, out.koLive, out.fixtures);
     return sendJson(res, 200, {
       ok: true, rev: env.rev, applied: (out.applied || Object.keys(out.results || {})).length,
       unmatched: out.unmatched || [],

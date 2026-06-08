@@ -18,6 +18,7 @@ import { TopNav } from './components/top-nav';
 import { Wobbles } from './components/mascot';
 import type { Person } from './data/teams';
 import { HomePage } from './pages/home';
+import { SchedulePage } from './pages/schedule';
 import { SweepstakePage } from './pages/sweepstake';
 import { TeamsPage } from './pages/teams';
 import { GroupsPage } from './pages/groups';
@@ -84,8 +85,8 @@ function GoalFlash({ show }: { show: boolean }) {
 /* Page registry — only the built pages are wired. Map/Admin are added in later
    phases; until then go() falls back to a playful "still building" toast. */
 const PAGES: Record<string, FC> = {
-  Home: HomePage, Sweepstake: SweepstakePage, Teams: TeamsPage, Groups: GroupsPage,
-  Knockout: KnockoutPage, Map: MapPage, Admin: AdminPage,
+  Home: HomePage, Schedule: SchedulePage, Sweepstake: SweepstakePage, Teams: TeamsPage,
+  Groups: GroupsPage, Knockout: KnockoutPage, Map: MapPage, Admin: AdminPage,
 };
 
 function App() {
