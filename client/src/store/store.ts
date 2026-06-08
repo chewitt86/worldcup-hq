@@ -92,6 +92,9 @@ export interface StoreState extends AppState {
   /* sync + reset */
   sync: () => string;
   reset: () => void;
+  /* clean slate for the real draw: clear all scores + eliminations + points,
+     keeping the people so they can be renamed/re-drawn. */
+  prepareForKickoff: () => void;
 }
 
 /* Strip a provider patch of anything key-shaped so a raw key can never be
@@ -199,6 +202,15 @@ export function createStore(): StoreApi<StoreState> {
 
     clearAllResults() {
       set({ results: {} });
+    },
+
+    prepareForKickoff() {
+      // wipe every group + knockout score, and reset each player to "all in,
+      // nil points" — ready for the real family draw on kickoff day.
+      set({
+        results: {},
+        people: get().people.map((p) => ({ ...p, out: [], points: 0 })),
+      });
     },
 
     /* ---- API providers (metadata only) ---- */

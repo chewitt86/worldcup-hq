@@ -119,6 +119,24 @@ describe('store actions', () => {
     expect(s.getState().settings.lastSync).toBe(ts);
   });
 
+  test('prepareForKickoff clears scores + eliminations + points, keeps people', () => {
+    const s = createStore();
+    s.getState().setResult('A', 0, [2, 1]);
+    s.getState().setResult('R32', 0, [3, 0]);
+    const id = s.getState().people[0].id;
+    s.getState().toggleOut(id, 'BRA');
+    s.getState().updatePerson(id, { points: 25 });
+    const peopleBefore = s.getState().people.length;
+
+    s.getState().prepareForKickoff();
+    expect(s.getState().results).toEqual({});
+    expect(s.getState().people).toHaveLength(peopleBefore); // people kept
+    s.getState().people.forEach((p) => {
+      expect(p.out).toEqual([]);
+      expect(p.points).toBe(0);
+    });
+  });
+
   test('reset restores DEFAULTS', () => {
     const s = createStore();
     s.getState().editTeam('BRA', { odds: '2/1' });
