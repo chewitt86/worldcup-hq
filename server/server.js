@@ -291,6 +291,16 @@ async function handleApi(req, res, url, method) {
 }
 
 /* serve a static file from client/dist; SPA-fallback to index.html for unknown routes */
+/* Cache policy: content-hashed bundles can be cached forever; index.html must
+   NOT be cached so a redeploy is picked up immediately (it points at the new
+   hashed bundle); other static files get a short cache. */
+function cacheControl(rel) {
+  if (rel.startsWith("/assets/")) return "public, max-age=31536000, immutable";
+  if (rel.startsWith("/geo/")) return "public, max-age=604800"; // 1 week — static map data
+  if (rel === "/index.html" || rel.endsWith(".html")) return "no-cache";
+  return "public, max-age=3600";
+}
+
 function serveStatic(req, res) {
   let rel = decodeURIComponent((req.url || "/").split("?")[0]);
   if (rel === "/") rel = "/index.html";
@@ -298,14 +308,15 @@ function serveStatic(req, res) {
   if (!fp.startsWith(CLIENT_DIR)) { res.writeHead(403); return res.end("forbidden"); }
   fs.readFile(fp, (err, buf) => {
     if (err) {
-      // SPA fallback: serve index.html so client-side (hash) routing works
+      // SPA fallback: serve index.html (never cached) so client-side routing works
       return fs.readFile(path.join(CLIENT_DIR, "index.html"), (e2, idx) => {
         if (e2) { res.writeHead(404); return res.end("Not found"); }
-        res.writeHead(200, { "Content-Type": "text/html; charset=utf-8" });
+        res.writeHead(200, { "Content-Type": "text/html; charset=utf-8", "Cache-Control": "no-cache" });
         res.end(idx);
       });
     }
-    res.writeHead(200, { "Content-Type": MIME[path.extname(fp)] || "application/octet-stream" });
+    res.writeHead(200, { "Content-Type": MIME[path.extname(fp)] || "application/octet-stream",
+      "Cache-Control": cacheControl(rel) });
     res.end(buf);
   });
 }
