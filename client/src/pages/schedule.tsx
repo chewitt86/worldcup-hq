@@ -42,12 +42,11 @@ function kickTime(ts: number): string {
   });
 }
 
-type FilterId = 'all' | 'upcoming' | 'results' | 'mine';
+type FilterId = 'all' | 'upcoming' | 'results';
 const FILTERS: { id: FilterId; label: string }[] = [
   { id: 'all', label: 'All' },
   { id: 'upcoming', label: 'Upcoming' },
   { id: 'results', label: 'Results' },
-  { id: 'mine', label: 'My players' },
 ];
 
 /* Stacked owner avatars for one team (mirrors the per-page helper used elsewhere). */
@@ -246,15 +245,11 @@ export function SchedulePage() {
   const [filter, setFilter] = useState<FilterId>('all');
   const [match, setMatch] = useState<Match | null>(null);
 
-  /* codes any sweepstake player owns — for the "My players" filter. */
-  const owned = useMemo(() => new Set(people.flatMap((p) => p.teams)), [people]);
-
   /* filter, then group by calendar day (BST), keeping days + rows in time order. */
   const days = useMemo(() => {
     const pass = (f: Fixture) => {
       if (filter === 'upcoming') return !f.played;
       if (filter === 'results') return f.played;
-      if (filter === 'mine') return owned.has(f.a) || owned.has(f.b);
       return true;
     };
     const list = fixtures.filter(pass).slice().sort((x, y) => x.ts - y.ts);
@@ -267,7 +262,7 @@ export function SchedulePage() {
       bucket.push(f);
     }
     return order.map((key) => ({ key, label: dayLabel(byDay.get(key)![0].ts), rows: byDay.get(key)! }));
-  }, [fixtures, filter, owned]);
+  }, [fixtures, filter]);
 
   const total = fixtures.length;
   const shown = days.reduce((n, d) => n + d.rows.length, 0);

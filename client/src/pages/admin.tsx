@@ -128,7 +128,34 @@ function AdminLogin({ onSuccess }: { onSuccess: (token: string) => void }) {
 }
 
 /* ---------- PERSON EDITOR ---------- */
+/* Read an image file and shrink it to a small square-ish JPEG data URL, so a
+   player photo stays tiny in the shared board (a few KB), not megabytes. */
+function resizeImageToDataUrl(file: File, max = 256): Promise<string> {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onerror = () => reject(new Error('read failed'));
+    reader.onload = () => {
+      const img = new Image();
+      img.onerror = () => reject(new Error('decode failed'));
+      img.onload = () => {
+        const scale = Math.min(1, max / Math.max(img.width, img.height));
+        const w = Math.max(1, Math.round(img.width * scale));
+        const h = Math.max(1, Math.round(img.height * scale));
+        const canvas = document.createElement('canvas');
+        canvas.width = w; canvas.height = h;
+        const ctx = canvas.getContext('2d');
+        if (!ctx) return reject(new Error('no canvas'));
+        ctx.drawImage(img, 0, 0, w, h);
+        resolve(canvas.toDataURL('image/jpeg', 0.82));
+      };
+      img.src = reader.result as string;
+    };
+    reader.readAsDataURL(file);
+  });
+}
+
 function PersonEditor({ p }: { p: Person }) {
+  const app = useApp();
   const teams = useStore(selectTeams);
   const [open, setOpen] = useState(false);
   const [name, setName] = useState(p.name);
@@ -178,6 +205,36 @@ function PersonEditor({ p }: { p: Person }) {
                     border: p.colour === c ? '4px solid var(--ink)' : '3px solid rgba(27,42,74,.3)',
                     boxShadow: p.colour === c ? '0 0 0 2px var(--sun)' : 'none' }} />
               ))}
+            </div>
+          </Field>
+
+          <Field label="Photo" hint="Shown on the big avatars (cards, podium); small avatars keep the initials.">
+            <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+              <Avatar person={p} size={62} />
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 7 }}>
+                <label className="head tap" style={{ background: 'var(--blue)', color: '#fff', fontSize: 12,
+                  padding: '7px 14px', borderRadius: 999, border: '2.5px solid var(--ink)',
+                  boxShadow: '2px 2px 0 rgba(27,42,74,.8)', whiteSpace: 'nowrap' }}>
+                  📷 {p.photo ? 'Change photo' : 'Upload photo'}
+                  <input type="file" accept="image/*" style={{ display: 'none' }}
+                    onChange={async (e) => {
+                      const file = e.target.files?.[0];
+                      e.target.value = '';
+                      if (!file) return;
+                      try {
+                        const photo = await resizeImageToDataUrl(file);
+                        store.getState().updatePerson(p.id, { photo });
+                        app.ping('📸 Photo updated');
+                      } catch {
+                        app.ping('⚠️ Could not read that image');
+                      }
+                    }} />
+                </label>
+                {p.photo && (
+                  <button onClick={() => store.getState().updatePerson(p.id, { photo: null })}
+                    style={{ ...btn('var(--cream2)', 'var(--ink)'), fontSize: 11.5 }}>Remove photo</button>
+                )}
+              </div>
             </div>
           </Field>
 

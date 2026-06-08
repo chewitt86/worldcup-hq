@@ -24,6 +24,9 @@ export interface Person {
   teams: string[];
   out: string[];
   best: string;
+  /* optional resized photo (data URL); shown only on large avatars — small
+     avatars always fall back to the coloured initials. */
+  photo?: string | null;
 }
 
 export interface TickerResult {

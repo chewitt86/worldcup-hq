@@ -104,13 +104,15 @@ function serveLoginPage(res, code) {
   });
 }
 
-/* Collect a (small) request body as a string. */
+/* Collect a request body as a string. 8 MB cap comfortably fits the shared
+   board even with several player photos (each resized to a few KB). */
+const MAX_BODY = 8 * 1024 * 1024;
 function readBody(req) {
   return new Promise((resolve) => {
     let data = "";
     req.on("data", (c) => {
       data += c;
-      if (data.length > 1e6) req.destroy(); // guard against oversized bodies
+      if (data.length > MAX_BODY) req.destroy(); // guard against oversized bodies
     });
     req.on("end", () => resolve(data));
     req.on("error", () => resolve(data));
