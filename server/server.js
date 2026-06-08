@@ -169,11 +169,14 @@ function resolveProvider(body) {
 
 /* ------------------------------------------------------- results poller ----- */
 
-/* Merge a results patch into the shared board (seeding an empty board if none),
- * stamp settings.lastSync, and persist via state.write (bumps rev). */
-function mergeResultsIntoBoard(results) {
+/* Merge a feed patch into the shared board (seeding an empty board if none):
+ * merge group results, REPLACE board.koLive when the feed carries knockout ties
+ * (a null koLive leaves any existing projection-driving value untouched), stamp
+ * settings.lastSync, and persist via state.write (bumps rev). */
+function mergeResultsIntoBoard(results, koLive) {
   const board = state.read().state || {};
   board.results = { ...(board.results || {}), ...(results || {}) };
+  if (koLive) board.koLive = koLive;
   board.settings = board.settings || {};
   board.settings.lastSync = new Date().toISOString();
   return state.write(board);
@@ -195,7 +198,7 @@ async function pollOnce() {
     if (!provider || !provider.key) return;
     const out = await fetcher.fetchLive(provider);
     if (!out || !out.ok) return;
-    mergeResultsIntoBoard(out.results);
+    mergeResultsIntoBoard(out.results, out.koLive);
   } catch (e) {
     /* swallow — the poller must never crash the server loop */
   }
@@ -272,7 +275,7 @@ async function handleApi(req, res, url, method) {
     const body = await readJsonBody(req);
     const out = await fetcher.fetchLive(resolveProvider(body));
     if (!out.ok) return sendJson(res, 200, out);
-    const env = mergeResultsIntoBoard(out.results);
+    const env = mergeResultsIntoBoard(out.results, out.koLive);
     return sendJson(res, 200, {
       ok: true, rev: env.rev, applied: (out.applied || Object.keys(out.results || {})).length,
       unmatched: out.unmatched || [],

@@ -99,8 +99,11 @@ function TieCard({
   results: ResultsMap;
 }) {
   const g = koGame(stage, gi, results);
-  const sc = g.score;
-  const played = g.played && sc != null;
+  // prefer the tie's OWN koLive score when it carries a played feed result,
+  // else fall back to the koGame/results overlay.
+  const live = tie.played === true && tie.as != null && tie.bs != null;
+  const sc = live ? ([tie.as, tie.bs] as [number, number]) : g.score;
+  const played = live || (g.played && sc != null);
   const actualWin = played ? (sc![0] > sc![1] ? tie.a : sc![1] > sc![0] ? tie.b : tie.w) : tie.w;
   return (
     <div className="tap" onClick={() => onGame({ tie, stage, i: gi })}
@@ -205,8 +208,10 @@ function GameModal({
   const { tie, stage, i } = game;
   const info = koGame(stage, i, results);
   const host = ({ USA: "USA", CAN: "Canada", MEX: "Mexico" } as Record<string, string>)[info.host];
-  const sc = info.score;
-  const played = info.played && sc != null;
+  // prefer the tie's OWN koLive score when it carries a played feed result.
+  const live = tie.played === true && tie.as != null && tie.bs != null;
+  const sc = live ? ([tie.as, tie.bs] as [number, number]) : info.score;
+  const played = live || (info.played && sc != null);
   const actualWin = played ? (sc![0] > sc![1] ? tie.a : sc![1] > sc![0] ? tie.b : tie.w) : tie.w;
 
   const TeamRow = ({ code }: { code: string }) => {
@@ -247,14 +252,15 @@ function GameModal({
 
         <TeamRow code={tie.a} />
         <div className="head" style={{ textAlign: "center", color: "var(--tomato)", fontSize: 16, margin: "6px 0" }}>
-          {info.played ? `${sc![0]} – ${sc![1]}` : "VS"}</div>
+          {played ? `${sc![0]} – ${sc![1]}` : "VS"}</div>
         <TeamRow code={tie.b} />
 
         {/* kickoff / score panel */}
         <div style={{ marginTop: 14, background: "var(--cream2)", border: "3px solid var(--ink)", borderRadius: 14,
           padding: "11px 13px" }}>
-          {info.played ? (
-            <div className="head" style={{ fontSize: 15, textAlign: "center" }}>FULL-TIME · {sc![0]}–{sc![1]}</div>
+          {played ? (
+            <div className="head" style={{ fontSize: 15, textAlign: "center" }}>
+              FULL-TIME · {sc![0]}–{sc![1]}{tie.pen ? ` · ${tie.pen} on pens` : ""}</div>
           ) : (
             <div style={{ display: "flex", flexDirection: "column", gap: 7 }}>
               <div style={{ display: "flex", alignItems: "center", gap: 9 }}>
@@ -269,7 +275,7 @@ function GameModal({
             </div>
           )}
         </div>
-        {!info.played && (
+        {!played && tie.w && teams[tie.w] && (
           <div style={{ textAlign: "center", fontWeight: 700, fontSize: 12, color: "var(--ink-soft)", marginTop: 10 }}>
             ✨ Projected winner: <span className="head">{teams[tie.w].name}</span>
           </div>
@@ -355,11 +361,13 @@ export function KnockoutPage() {
   const people = app.people;
   const results = useStore((s) => s.results);
   const teams = useStore(selectTeams);
+  const koLive = useStore((s) => s.koLive);
   const [team, setTeam] = useState<string | null>(null);
   const [game, setGame] = useState<GameRef | null>(null);
-  // re-derive when the store's results or derived team display data change;
-  // saved knockout scores drive advancement, odds-edits re-seed the projection
-  const b = useMemo(() => buildBracket({ results, teams }), [results, teams]);
+  // re-derive when the store's results, live knockout feed or derived team
+  // display data change; full koLive rounds drive real advancement, saved
+  // knockout scores and odds-edits feed the projection
+  const b = useMemo(() => buildBracket({ results, teams, koLive }), [results, teams, koLive]);
   const runnerUp = b.final.a === b.champ ? b.final.b : b.final.a;
   const apiRef = useRef<PanZoomHandle | null>(null);
   const onReady = useCallback((api: PanZoomHandle) => { apiRef.current = api; }, []);

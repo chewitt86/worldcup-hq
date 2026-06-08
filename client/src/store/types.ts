@@ -61,6 +61,31 @@ export interface MatchResult {
 /* Map of "stage:index" → saved result. */
 export type Results = Record<string, MatchResult>;
 
+/* ---- live knockout (koLive) ----
+   A knockout tie as reported by the live feed. `a`/`b` are our internal
+   3-letter team CODES ('' when a slot's team isn't decided yet); `as`/`bs` are
+   a's and b's goals (null until played); `pen` is the winner's CODE when the tie
+   was decided on penalties, else null. */
+export interface KoTie {
+  a: string;
+  b: string;
+  as: number | null;
+  bs: number | null;
+  played: boolean;
+  pen: string | null;
+}
+
+/* One ordered array per round (feed order, by date). A round's array is only
+   authoritative when it holds the FULL count (R32:16, R16:8, QF:4, SF:2,
+   Final:1); a partially-drawn round is treated as not-yet-available. */
+export interface KoLive {
+  R32: KoTie[];
+  R16: KoTie[];
+  QF: KoTie[];
+  SF: KoTie[];
+  Final: KoTie[];
+}
+
 /* The whole shared board. */
 export interface AppState {
   settings: Settings;
@@ -69,4 +94,6 @@ export interface AppState {
   results: Results;
   /* bumps whenever odds change so the projected bracket re-seeds. */
   bracketNonce: number;
+  /* live knockout results from the feed; null until a feed reports any. */
+  koLive?: KoLive | null;
 }

@@ -10,6 +10,7 @@
 import { TEAMS, type Team } from './teams';
 import { GROUPS, GROUP_FIXTURES, groupOf } from './tournament';
 import { buildBracket, type Tie, type SavedResult } from '../lib/bracket';
+import type { KoLive } from '../store/types';
 
 /* ---- types ---- */
 export type KoStage = 'R32' | 'R16' | 'QF' | 'SF' | 'F';
@@ -176,6 +177,7 @@ export function stageRoutes(
   stage: MapStage,
   results: ResultsMap = {},
   teams: Record<string, Team> = TEAMS,
+  koLive: KoLive | null = null,
 ): StageRoutesResult {
   if (stage === 'Groups') {
     return {
@@ -190,7 +192,7 @@ export function stageRoutes(
         }))),
     };
   }
-  const b = buildBracket({ results, teams });
+  const b = buildBracket({ results, teams, koLive });
   const ties: Tie[] = stage === 'F'
     ? [b.final]
     : (({ R32: b.r32, R16: b.r16, QF: b.qf, SF: b.sf } as Record<string, Tie[]>)[stage] || []);
@@ -220,7 +222,12 @@ export const KO_TIMES = ['5:00pm', '8:00pm', '11:00pm']; // BST kick-offs
 
 /* All games a given team plays in a stage: opponent, venue, date/time (BST),
    and score if played. Groups -> 3 fixtures; knockout -> 1 tie. */
-export function teamGames(code: string, stage: MapStage, results: ResultsMap = {}): TeamGame[] {
+export function teamGames(
+  code: string,
+  stage: MapStage,
+  results: ResultsMap = {},
+  koLive: KoLive | null = null,
+): TeamGame[] {
   if (stage === 'Groups') {
     const g = groupOf(code);
     const venues = ROUTES[code] || [];
@@ -247,7 +254,7 @@ export function teamGames(code: string, stage: MapStage, results: ResultsMap = {
         };
       });
   }
-  const sr = stageRoutes(stage, results);
+  const sr = stageRoutes(stage, results, TEAMS, koLive);
   return sr.matches
     .map((m, i) => ({ m, i }))
     .filter(({ m }) => m.a === code || m.b === code)

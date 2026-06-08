@@ -1,8 +1,8 @@
 const { test } = require('node:test');
 const assert = require('node:assert/strict');
 const {
-  teamId, probe, norm, classifyRound,
-  allGroupFixtures, normaliseGroupResults,
+  teamId, teamCode, probe, norm, classifyRound,
+  allGroupFixtures, normaliseGroupResults, normaliseKnockout,
 } = require('./fetcher');
 
 /* Build an API-Football-shaped fixture object for the tests. */
@@ -12,6 +12,24 @@ function fixture(home, away, hg, ag, { round = 'Group A', short = 'FT' } = {}) {
     league: { round },
     teams: { home: { name: home }, away: { name: away } },
     goals: { home: hg, away: ag },
+  };
+}
+
+/* A richer knockout-shaped fixture: lets a test set timestamp, penalties and the
+ * teams.*.winner flag the way API-Football reports them. */
+function koFixture(home, away, hg, ag, {
+  round = 'Round of 32', short = 'FT', timestamp = 0,
+  penHome = null, penAway = null, winner = null,
+} = {}) {
+  return {
+    fixture: { status: { short }, timestamp },
+    league: { round },
+    teams: {
+      home: { name: home, winner: winner === 'home' ? true : winner === 'away' ? false : null },
+      away: { name: away, winner: winner === 'away' ? true : winner === 'home' ? false : null },
+    },
+    goals: { home: hg, away: ag },
+    score: { penalty: { home: penHome, away: penAway } },
   };
 }
 
@@ -108,4 +126,81 @@ test('normaliseGroupResults skips knockout + unfinished games and reports unmatc
   assert.deepEqual(applied, []);
   assert.equal(Object.keys(results).length, 0);
   assert.ok(unmatched.includes('Atlantis'));
+});
+
+/* ------------------------------- team codes ------------------------------- */
+
+test('teamCode maps a feed name (and alias) to our 3-letter code', () => {
+  assert.equal(teamCode('Brazil'), 'BRA');
+  assert.equal(teamCode('Korea Republic'), 'KOR'); // alias → South Korea → KOR
+  assert.equal(teamCode('USA'), 'USA');
+  assert.equal(teamCode('Atlantis'), null);
+});
+
+/* ----------------------------- normaliseKnockout -------------------------- */
+
+test('normaliseKnockout maps a played R32 tie to codes/scores/played', () => {
+  const ko = normaliseKnockout([
+    koFixture('Brazil', 'Morocco', 2, 1, { round: 'Round of 32', timestamp: 100 }),
+  ]);
+  assert.deepEqual(ko.R32, [{ a: 'BRA', b: 'MAR', as: 2, bs: 1, played: true, pen: null }]);
+  // rounds with no ties are omitted entirely
+  assert.equal(ko.R16, undefined);
+  assert.equal(ko.QF, undefined);
+});
+
+test('normaliseKnockout records a penalty winner from score.penalty', () => {
+  const ko = normaliseKnockout([
+    koFixture('Spain', 'France', 1, 1, { round: 'Round of 16', penHome: 4, penAway: 2 }),
+  ]);
+  assert.deepEqual(ko.R16, [{ a: 'ESP', b: 'FRA', as: 1, bs: 1, played: true, pen: 'ESP' }]);
+});
+
+test('normaliseKnockout falls back to a teams.*.winner flag for penalties', () => {
+  const ko = normaliseKnockout([
+    // a drawn, finished tie with no penalty score, but the away side flagged winner
+    koFixture('Germany', 'England', 0, 0, { round: 'Quarter-finals', winner: 'away' }),
+  ]);
+  assert.deepEqual(ko.QF, [{ a: 'GER', b: 'ENG', as: 0, bs: 0, played: true, pen: 'ENG' }]);
+});
+
+test('normaliseKnockout keeps an unplayed SF with null scores', () => {
+  const ko = normaliseKnockout([
+    koFixture('Argentina', 'Portugal', null, null, { round: 'Semi-finals', short: 'NS' }),
+  ]);
+  assert.deepEqual(ko.SF, [{ a: 'ARG', b: 'POR', as: null, bs: null, played: false, pen: null }]);
+});
+
+test('normaliseKnockout orders each round by fixture timestamp', () => {
+  const ko = normaliseKnockout([
+    koFixture('Brazil', 'Morocco', 1, 0, { round: 'Round of 32', timestamp: 300 }),
+    koFixture('Spain', 'France', 2, 0, { round: 'Round of 32', timestamp: 100 }),
+    koFixture('England', 'Croatia', 3, 1, { round: 'Round of 32', timestamp: 200 }),
+  ]);
+  assert.deepEqual(ko.R32.map((t) => t.a), ['ESP', 'ENG', 'BRA']);
+});
+
+test('normaliseKnockout returns null when there are no knockout ties', () => {
+  assert.equal(normaliseKnockout([fixture('Mexico', 'South Africa', 2, 1)]), null);
+  assert.equal(normaliseKnockout([]), null);
+  // 3rd-place is ignored for now
+  assert.equal(
+    normaliseKnockout([koFixture('Brazil', 'Spain', 1, 0, { round: '3rd Place Final' })]),
+    null,
+  );
+});
+
+test('group and knockout normalise independently from the same response', () => {
+  const response = [
+    fixture('Mexico', 'South Africa', 2, 1, { round: 'Group A' }),
+    koFixture('Brazil', 'Morocco', 3, 0, { round: 'Round of 32', timestamp: 10 }),
+  ];
+  // group normaliser sees only the group game…
+  const { results, applied } = normaliseGroupResults(response);
+  assert.deepEqual(applied, ['A:0']);
+  assert.deepEqual(results['A:0'], { score: [2, 1], played: true });
+  // …and the knockout normaliser sees only the KO tie.
+  const ko = normaliseKnockout(response);
+  assert.deepEqual(Object.keys(ko), ['R32']);
+  assert.deepEqual(ko.R32[0], { a: 'BRA', b: 'MAR', as: 3, bs: 0, played: true, pen: null });
 });

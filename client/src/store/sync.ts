@@ -85,6 +85,7 @@ function extractBoard(s: StoreState): AppState {
     teamEdits: s.teamEdits,
     results: s.results,
     bracketNonce: s.bracketNonce,
+    koLive: s.koLive ?? null,
   };
 }
 
@@ -97,6 +98,7 @@ function applyBoard(store: StoreApi<StoreState>, board: Partial<AppState>): void
   if (board.teamEdits) patch.teamEdits = board.teamEdits;
   if (board.results) patch.results = board.results;
   if (typeof board.bracketNonce === 'number') patch.bracketNonce = board.bracketNonce;
+  if ('koLive' in board) patch.koLive = board.koLive ?? null;
   store.setState(patch as Partial<StoreState>);
 }
 

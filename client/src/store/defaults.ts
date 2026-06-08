@@ -74,4 +74,5 @@ export const DEFAULTS: AppState = {
   teamEdits: {}, // { CODE: { name?, odds?, tier?, titles?, fact?, squad? } }
   results: {}, // { "stage:index": { score:[a,b], played:true } }
   bracketNonce: 0, // bumps when odds change so the bracket re-seeds
+  koLive: null, // live knockout ties from the feed; null until any are reported
 };

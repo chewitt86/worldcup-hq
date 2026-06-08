@@ -18,6 +18,7 @@ import {
   oddsNum as groupOddsNum,
   type Standing,
 } from '../data/tournament';
+import type { KoLive, KoTie } from '../store/types';
 
 /* ---- types ---- */
 export const STAGES = ['R32', 'R16', 'QF', 'SF', 'Final'] as const;
@@ -27,7 +28,15 @@ export interface Tie {
   a: string;
   b: string;
   w: string;
+  /* present only when a koLive feed result drives this tie. */
+  as?: number | null;
+  bs?: number | null;
+  pen?: string | null;
+  played?: boolean;
 }
+
+/* The full count a round must report before its koLive array is authoritative. */
+const ROUND_COUNT: Record<Stage, number> = { R32: 16, R16: 8, QF: 4, SF: 2, Final: 1 };
 
 export interface Bracket {
   r32: Tie[];
@@ -49,6 +58,18 @@ export interface SavedResult {
 export interface BracketState {
   results: Record<string, SavedResult>;
   teams: Record<string, Team>;
+  /* live knockout ties from the feed; a round is only applied when it holds its
+     full expected count (see ROUND_COUNT). Absent/partial rounds keep the
+     projection. */
+  koLive?: KoLive | null;
+}
+
+/* Map a feed KoTie onto a Tie: the winner is the higher-scoring side, or the
+   penalty winner's code when level (or undecided). */
+function mapKoTie(t: KoTie): Tie {
+  const { a, b, as, bs, pen } = t;
+  const w = (as as number) > (bs as number) ? a : (bs as number) > (as as number) ? b : (pen || '');
+  return { a, b, w, as, bs, pen, played: t.played };
 }
 
 /* ---- odds → number (lower odds = stronger). Reads the supplied teams map so
@@ -157,7 +178,7 @@ export function qualifiers(standings: Record<string, Standing>): string[] {
    propagates the ACTUAL winners into the next round. Pre-tournament (no results)
    the 32 strongest-by-odds qualify and seed — the correct projection. */
 export function buildBracket(state: BracketState): Bracket {
-  const { results, teams } = state;
+  const { results, teams, koLive } = state;
   const standings = computeStandings(results);
 
   // the 32 qualifiers, ordered strongest-first (seed1 = index 0)
@@ -171,14 +192,27 @@ export function buildBracket(state: BracketState): Bracket {
     r32pairs.push([seeds[order[i] - 1], seeds[order[i + 1] - 1]]);
   }
 
-  const buildRound = (pairs: [string, string][], stage: Stage): Tie[] =>
-    pairs.map(([a, b], i) => ({ a, b, w: tieWinner(a, b, stage, i, results, teams, standings) }));
+  /* A round's koLive array, but only when it reports its FULL expected count;
+     a partially-drawn round is treated as not-yet-available. */
+  const liveRound = (stage: Stage): KoTie[] | null => {
+    const arr = koLive ? koLive[stage] : null;
+    return arr && arr.length === ROUND_COUNT[stage] ? arr : null;
+  };
 
-  const r32 = buildRound(r32pairs, 'R32');
-  const r16 = buildRound(nextPairs(r32), 'R16');
-  const qf = buildRound(nextPairs(r16), 'QF');
-  const sf = buildRound(nextPairs(qf), 'SF');
-  const final = buildRound(nextPairs(sf), 'Final')[0];
+  /* Resolve one round: a full koLive round REPLACES the projection (real teams
+     + scores, with the penalty winner advancing); otherwise build the
+     projection from the pairs fed in from the previous round's winners. */
+  const resolveRound = (pairs: [string, string][], stage: Stage): Tie[] => {
+    const live = liveRound(stage);
+    if (live) return live.map(mapKoTie);
+    return pairs.map(([a, b], i) => ({ a, b, w: tieWinner(a, b, stage, i, results, teams, standings) }));
+  };
+
+  const r32 = resolveRound(r32pairs, 'R32');
+  const r16 = resolveRound(nextPairs(r32), 'R16');
+  const qf = resolveRound(nextPairs(r16), 'QF');
+  const sf = resolveRound(nextPairs(qf), 'SF');
+  const final = resolveRound(nextPairs(sf), 'Final')[0];
 
   return { r32, r16, qf, sf, final, champ: final.w, seeds };
 }

@@ -32,10 +32,29 @@ const GROUPS = {
 };
 const GROUP_LETTERS = Object.keys(GROUPS);
 
-/* Flat team list with a stable id + group letter (used by team-name matching). */
+/* The client's internal 3-letter team CODES, in the SAME draw order as GROUPS
+ * above, so CODES[g][i] is the code for the team GROUPS[g][i]. These are the
+ * identifiers the shared board (and koLive contract) uses for knockout teams. */
+const CODES = {
+  A: ["MEX", "RSA", "KOR", "CZE"],
+  B: ["CAN", "BIH", "QAT", "SUI"],
+  C: ["BRA", "MAR", "HAI", "SCO"],
+  D: ["USA", "PAR", "AUS", "TUR"],
+  E: ["GER", "CUW", "CIV", "ECU"],
+  F: ["NED", "JPN", "SWE", "TUN"],
+  G: ["BEL", "EGY", "IRN", "NZL"],
+  H: ["ESP", "CPV", "KSA", "URU"],
+  I: ["FRA", "SEN", "IRQ", "NOR"],
+  J: ["ARG", "ALG", "AUT", "JOR"],
+  K: ["POR", "COD", "UZB", "COL"],
+  L: ["ENG", "CRO", "GHA", "PAN"],
+};
+
+/* Flat team list with a stable id, 3-letter code + group letter (used by
+ * team-name matching). id indexes group results; code drives knockout ties. */
 const TEAMS = GROUP_LETTERS.flatMap((g) =>
-  GROUPS[g].map((name) => ({ name, group: g })),
-).map((t, id) => ({ id, name: t.name, group: t.group }));
+  GROUPS[g].map((name, i) => ({ name, code: CODES[g][i], group: g })),
+).map((t, id) => ({ id, name: t.name, code: t.code, group: t.group }));
 
 /* round-robin pairing order (4 teams → 6 matches), matching the client. */
 const RR = [[0, 1], [2, 3], [0, 2], [1, 3], [0, 3], [1, 2]];
@@ -83,6 +102,9 @@ Object.entries(ALIAS).forEach(([feed, our]) => { NAME2ID[norm(feed)] = NAME2ID[n
 
 /* resolve a feed team name to our internal team id, or null if unknown. */
 function teamId(name) { const k = norm(name); return (k in NAME2ID) ? NAME2ID[k] : null; }
+
+/* resolve a feed team name to our 3-letter CODE (e.g. "BRA"), or null if unknown. */
+function teamCode(name) { const id = teamId(name); return id == null ? null : TEAMS[id].code; }
 
 /* map a feed "round" string to one of our stages, or "other". */
 function classifyRound(roundStr) {
@@ -158,6 +180,72 @@ function normaliseGroupResults(responseArray) {
 }
 
 /* ---------------------------------------------------------------------------
+ * normaliseKnockout — PURE: API-Football `response[]` → a koLive structure.
+ *
+ * For each fixture whose league.round maps to a knockout round (R32/R16/QF/SF/
+ * Final; 3rd-place is ignored), match both team names to our 3-letter codes and
+ * push a tie { a, b, as, bs, played, pen }:
+ *   - a, b   home/away CODE, or '' when the team isn't ours/known.
+ *   - as, bs home/away goals (Number), or null until the tie is played.
+ *   - played true once the status is FT/AET/PEN.
+ *   - pen    the winner's CODE when decided on penalties (score.penalty, or a
+ *            teams.*.winner flag on an otherwise drawn finished tie), else null.
+ * Each round's array is ordered by fixture date/timestamp (feed order). Only
+ * rounds with at least one tie are returned; rounds with none are omitted so the
+ * client keeps its projection. Returns null when no knockout ties are present.
+ * ------------------------------------------------------------------------- */
+const KO_ROUNDS = ["R32", "R16", "QF", "SF", "Final"];
+
+function normaliseKnockout(responseArray) {
+  const buckets = { R32: [], R16: [], QF: [], SF: [], Final: [] };
+
+  (Array.isArray(responseArray) ? responseArray : []).forEach((f) => {
+    const roundStr = f && f.league ? f.league.round : "";
+    const round = classifyRound(roundStr);
+    if (!KO_ROUNDS.includes(round)) return; // skip group / 3rd-place / other
+
+    const homeName = f.teams && f.teams.home ? f.teams.home.name : null;
+    const awayName = f.teams && f.teams.away ? f.teams.away.name : null;
+    const a = teamCode(homeName) || "";
+    const b = teamCode(awayName) || "";
+
+    const short = f.fixture && f.fixture.status ? f.fixture.status.short : "";
+    const played = ["FT", "AET", "PEN"].includes(short);
+
+    const hg = f.goals ? f.goals.home : null;
+    const ag = f.goals ? f.goals.away : null;
+    const as = played && hg != null ? Number(hg) : null;
+    const bs = played && ag != null ? Number(ag) : null;
+
+    let pen = null;
+    const penScore = f.score && f.score.penalty;
+    if (penScore && penScore.home != null && penScore.away != null && penScore.home !== penScore.away) {
+      pen = penScore.home > penScore.away ? (a || null) : (b || null);
+    }
+    if (pen == null && played && as != null && bs != null && as === bs && f.teams) {
+      if (f.teams.home && f.teams.home.winner === true) pen = a || null;
+      else if (f.teams.away && f.teams.away.winner === true) pen = b || null;
+    }
+
+    const ts = f.fixture && f.fixture.timestamp != null
+      ? Number(f.fixture.timestamp)
+      : (f.fixture && f.fixture.date ? Date.parse(f.fixture.date) : 0);
+
+    buckets[round].push({ ts, tie: { a, b, as, bs, played, pen } });
+  });
+
+  const koLive = {};
+  let any = false;
+  KO_ROUNDS.forEach((r) => {
+    if (!buckets[r].length) return; // omit empty rounds → client keeps projection
+    buckets[r].sort((x, y) => x.ts - y.ts);
+    koLive[r] = buckets[r].map((e) => e.tie);
+    any = true;
+  });
+  return any ? koLive : null;
+}
+
+/* ---------------------------------------------------------------------------
  * Live-data proxy. Takes a fully-resolved provider config (server-side, so it
  * may carry the secret `key`):
  *   { name, baseUrl, authHeader, path?, key, league?, season?, host? }
@@ -205,15 +293,15 @@ async function apiFootballFetch(provider) {
   return { ok: true, data };
 }
 
-/* fetchLive — pull the tournament from a provider and normalise group results
- * into the board shape. Returns { ok:true, results, applied, unmatched } or
- * { ok:false, reason }. */
+/* fetchLive — pull the tournament from a provider and normalise both group
+ * results AND knockout ties into the board shape. Returns
+ * { ok:true, results, koLive, applied, unmatched } or { ok:false, reason }. */
 async function fetchLive(provider) {
   const fetched = await apiFootballFetch(provider);
   if (!fetched.ok) return fetched;
-  // TODO: map knockout fixtures -> "R32:i" bracket slots (skipped for now).
   const { results, applied, unmatched } = normaliseGroupResults(fetched.data.response);
-  return { ok: true, results, applied, unmatched };
+  const koLive = normaliseKnockout(fetched.data.response);
+  return { ok: true, results, koLive, applied, unmatched };
 }
 
 /* probe — the admin "Test connection" button. Runs a real fetch via fetchLive
@@ -231,7 +319,7 @@ async function probe(provider) {
 }
 
 module.exports = {
-  fetchLive, probe, teamId, norm, classifyRound,
-  allGroupFixtures, normaliseGroupResults,
-  GROUPS, TEAMS, _norm: norm,
+  fetchLive, probe, teamId, teamCode, norm, classifyRound,
+  allGroupFixtures, normaliseGroupResults, normaliseKnockout,
+  GROUPS, CODES, TEAMS, _norm: norm,
 };

@@ -210,6 +210,7 @@ export function createStore(): StoreApi<StoreState> {
       set({
         results: {},
         people: get().people.map((p) => ({ ...p, out: [], points: 0 })),
+        koLive: null,
       });
     },
 
@@ -275,6 +276,7 @@ export function createStore(): StoreApi<StoreState> {
         teamEdits: fresh.teamEdits,
         results: fresh.results,
         bracketNonce: fresh.bracketNonce,
+        koLive: fresh.koLive ?? null,
       });
     },
   }));
