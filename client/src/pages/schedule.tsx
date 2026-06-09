@@ -138,8 +138,8 @@ function FixtureRow({ f, teams, people, onMatch }: {
       style={{ background: 'var(--cream)', padding: '10px 13px', display: 'flex', flexDirection: 'column', gap: 9 }}>
       {/* header: round chip + kick-off time (BST) */}
       <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-        <span className="head" style={{ background: f.played ? 'var(--grass)' : 'var(--grape)', color: '#fff',
-          fontSize: 11, padding: '3px 10px', borderRadius: 999, border: '2px solid var(--ink)', whiteSpace: 'nowrap' }}>
+        <span className="head pill" style={{ background: f.played ? 'var(--grass)' : 'var(--grape)', color: '#fff',
+          fontSize: 11, padding: '4px 10px', borderRadius: 999, border: '2px solid var(--ink)', whiteSpace: 'nowrap' }}>
           {f.label}
         </span>
         <span className="head" style={{ marginLeft: 'auto', fontSize: 13, color: 'var(--ink)', whiteSpace: 'nowrap' }}>
@@ -173,9 +173,9 @@ function FixtureRow({ f, teams, people, onMatch }: {
           </div>
         )}
         {!f.played && (
-          <div className="tap" onClick={toggleRemind} style={{ marginLeft: 'auto', fontFamily: 'var(--head)',
+          <div className="tap pill" onClick={toggleRemind} style={{ marginLeft: 'auto', fontFamily: 'var(--head)',
             fontSize: 11, background: isReminded ? 'var(--grass)' : 'var(--sun)', border: '2.5px solid var(--ink)',
-            borderRadius: 999, padding: '4px 11px', boxShadow: '2px 2px 0 rgba(27,42,74,.8)', whiteSpace: 'nowrap' }}>
+            borderRadius: 999, padding: '5px 11px', boxShadow: '2px 2px 0 rgba(27,42,74,.8)', whiteSpace: 'nowrap' }}>
             {isReminded ? '✅ Reminded' : '🔔 Remind me'}
           </div>
         )}
@@ -199,7 +199,7 @@ function EmptyState({ teams }: { teams: Record<string, Team> }) {
           Once a feed is connected, every match appears here as a day-by-day diary with
           kick-off times and live scores.
         </div>
-        <div className="head tap" onClick={() => app.go('Admin')} style={{ background: 'var(--sun)',
+        <div className="head tap pill" onClick={() => app.go('Admin')} style={{ background: 'var(--sun)',
           color: 'var(--ink)', fontSize: 14, padding: '8px 18px', borderRadius: 999,
           border: '3px solid var(--ink)', boxShadow: '2px 3px 0 rgba(27,42,74,.8)' }}>
           ⚙️ Open Admin
@@ -296,9 +296,9 @@ export function SchedulePage() {
           ) : (
             days.map((d) => (
               <div key={d.key} style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
-                <div className="head" style={{ display: 'inline-flex', alignSelf: 'flex-start',
-                  alignItems: 'center', gap: 8, background: 'var(--ink)', color: 'var(--cream)',
-                  fontSize: 14, padding: '5px 14px', borderRadius: 999, border: '3px solid var(--ink)',
+                <div className="head pill" style={{ alignSelf: 'flex-start',
+                  gap: 8, background: 'var(--ink)', color: 'var(--cream)',
+                  fontSize: 14, padding: '6px 14px', borderRadius: 999, border: '3px solid var(--ink)',
                   boxShadow: '2px 3px 0 rgba(27,42,74,.5)' }}>
                   📅 {d.label}
                   <span style={{ fontSize: 11, opacity: 0.7 }}>{d.rows.length}</span>

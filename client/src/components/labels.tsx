@@ -24,9 +24,9 @@ export function PageTitle({
         {children}
       </h1>
       {sub && (
-        <div className="head" style={{ display: 'inline-block', marginTop: 10,
+        <div className="head pill" style={{ marginTop: 10,
           background: accent, color: 'var(--ink)', fontSize: 14, letterSpacing: '.5px',
-          padding: '5px 14px', borderRadius: 999, border: '3px solid var(--ink)',
+          padding: '6px 14px', borderRadius: 999, border: '3px solid var(--ink)',
           boxShadow: '2px 3px 0 rgba(27,42,74,.7)' }}>{sub}</div>
       )}
     </div>

@@ -71,6 +71,10 @@
 
 /* pill nav chips */
 .navpill {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  line-height: 1;
   font-family: var(--head);
   font-size: 15px;
   letter-spacing: .5px;
@@ -229,6 +233,10 @@
 .anim-jump { animation: wchq-jump .8s cubic-bezier(.3,.7,.3,1.3); }
 .anim-flip { animation: wchq-flip .85s cubic-bezier(.3,.7,.3,1.2); }
 .anim-wiggle { animation: wchq-wiggle .6s ease-in-out; }
+
+/* oval "pill" badges — vertically centre the chunky head font (which otherwise
+   sits high) and keep an even optical padding. Applied to every rounded badge. */
+.pill { display: inline-flex; align-items: center; line-height: 1; vertical-align: middle; }
 
 @media (prefers-reduced-motion: reduce) {
   .anim-spin, .anim-bob, .anim-wobble { animation: none !important; }

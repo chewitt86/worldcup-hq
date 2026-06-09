@@ -218,7 +218,7 @@ function PersonEditor({ p }: { p: Person }) {
             <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
               <Avatar person={p} size={62} />
               <div style={{ display: 'flex', flexDirection: 'column', gap: 7 }}>
-                <label className="head tap" style={{ background: 'var(--blue)', color: '#fff', fontSize: 12,
+                <label className="head tap pill" style={{ background: 'var(--blue)', color: '#fff', fontSize: 12,
                   padding: '7px 14px', borderRadius: 999, border: '2.5px solid var(--ink)',
                   boxShadow: '2px 2px 0 rgba(27,42,74,.8)', whiteSpace: 'nowrap' }}>
                   📷 {p.photo ? 'Change photo' : 'Upload photo'}

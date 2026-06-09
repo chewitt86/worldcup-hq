@@ -140,10 +140,10 @@ export function MapPage() {
         <div ref={stripRef} className="sticker" style={{ padding: '13px 15px' }}>
           <div className="head" style={{ fontSize: 15, display: 'flex', alignItems: 'center', gap: 8, marginBottom: 10 }}>
             <Flag code={single} style={{ width: 26, height: 18 }} />{teams[single].name.toUpperCase()}'S GAMES
-            <span className="tap" onClick={() => setPopup(single)}
+            <span className="tap pill" onClick={() => setPopup(single)}
               style={{ marginLeft: 'auto', fontSize: 11, fontFamily: 'var(--head)', color: '#fff',
                 background: 'var(--blue)', border: '2.5px solid var(--ink)', borderRadius: 999,
-                padding: '3px 10px' }}>ⓘ TEAM INFO</span>
+                padding: '4px 10px' }}>ⓘ TEAM INFO</span>
           </div>
           <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
             {teamGames(single, stage, results, koLive).map((gm, i) => {

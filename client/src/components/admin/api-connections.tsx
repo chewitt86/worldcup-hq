@@ -137,8 +137,8 @@ function ProviderRow({
         <div style={{ flex: 1, minWidth: 0 }}>
           <div className="head" style={{ fontSize: 15, display: 'flex', alignItems: 'center', gap: 7 }}>
             {p.name}
-            {active && <span style={{ fontFamily: 'var(--head)', fontSize: 9, color: '#fff', background: 'var(--blue)',
-              padding: '1px 7px', borderRadius: 999, border: '2px solid var(--ink)' }}>ACTIVE</span>}
+            {active && <span className="pill" style={{ fontFamily: 'var(--head)', fontSize: 9, color: '#fff', background: 'var(--blue)',
+              padding: '3px 8px', borderRadius: 999, border: '2px solid var(--ink)' }}>ACTIVE</span>}
           </div>
           <div style={{ fontSize: 11, fontWeight: 700, opacity: .6 }}>{st.label}{p.keySet ? ' · key ' + p.keyHint : ''}</div>
         </div>

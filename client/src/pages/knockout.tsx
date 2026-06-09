@@ -179,7 +179,7 @@ function CenterCol({
   return (
     <div style={{ display: "flex", flexDirection: "column", width: 178, flex: "0 0 auto", position: "relative", zIndex: 1,
       justifyContent: "center", alignItems: "center", gap: 14 }}>
-      <div className="head" style={{ color: "var(--ink)", background: "var(--sun)", fontSize: 14,
+      <div className="head pill" style={{ color: "var(--ink)", background: "var(--sun)", fontSize: 14,
         letterSpacing: "1px", padding: "6px 22px", borderRadius: 999, border: "3px solid var(--ink)",
         boxShadow: "2px 3px 0 rgba(27,42,74,.6)" }}>★ FINAL ★</div>
       <TieCard tie={final} stage="F" gi={0} onGame={onGame} people={people} teams={teams} results={results} big />
@@ -243,8 +243,8 @@ function GameModal({
       <div onClick={(e) => e.stopPropagation()} className="sticker"
         style={{ width: "100%", maxWidth: 340, padding: 18 }}>
         <div style={{ display: "flex", alignItems: "center", marginBottom: 14 }}>
-          <span className="head" style={{ background: "var(--grape)", color: "#fff", fontSize: 13,
-            padding: "4px 12px", borderRadius: 999, border: "2.5px solid var(--ink)" }}>{info.label}</span>
+          <span className="head pill" style={{ background: "var(--grape)", color: "#fff", fontSize: 13,
+            padding: "5px 12px", borderRadius: 999, border: "2.5px solid var(--ink)" }}>{info.label}</span>
           <div className="tap" onClick={onClose} style={{ marginLeft: "auto", fontFamily: "var(--head)", fontSize: 20,
             width: 30, height: 30, borderRadius: "50%", border: "3px solid var(--ink)", display: "flex",
             alignItems: "center", justifyContent: "center" }}>×</div>
@@ -328,8 +328,8 @@ function ChampionHero({
           style={{ display: "flex", alignItems: "center", gap: 10, marginTop: 5, flexWrap: "wrap" }}>
           <Flag code={champ} style={{ width: 42, height: 30, borderRadius: 6, boxShadow: "2px 2px 0 rgba(0,0,0,.4)" }} />
           <span className="head" style={{ color: "#fff", fontSize: 26, textShadow: "0 0 12px rgba(255,210,63,.7)" }}>{t.name}</span>
-          <span className="head" style={{ color: "var(--ink)", background: "var(--sun)", fontSize: 13,
-            padding: "2px 10px", borderRadius: 999, border: "2px solid var(--ink)" }}>{t.odds}</span>
+          <span className="head pill" style={{ color: "var(--ink)", background: "var(--sun)", fontSize: 13,
+            padding: "4px 10px", borderRadius: 999, border: "2px solid var(--ink)" }}>{t.odds}</span>
         </div>
         <div style={{ color: "#9fb2d4", fontWeight: 700, fontSize: 13, marginTop: 6 }}>
           Beats {teams[runnerUp]?.name} in the final ✨</div>

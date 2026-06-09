@@ -58,7 +58,7 @@ export function NextUpCard({
       </div>
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8 }}>
         <span style={{ fontSize: 12, fontWeight: 700, opacity: .6 }}>📍 {m.venue}</span>
-        <div className="tap" onClick={handleReminder}
+        <div className="tap pill" onClick={handleReminder}
           style={{ fontFamily: 'var(--head)', fontSize: 12,
             background: isReminded ? 'var(--grass)' : 'var(--sun)',
             border: '2.5px solid var(--ink)', borderRadius: 999, padding: '5px 12px',

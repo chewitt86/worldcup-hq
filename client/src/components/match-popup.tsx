@@ -131,7 +131,7 @@ function MatchPopup({
       >
         <div style={{ display: 'flex', alignItems: 'center', marginBottom: 14 }}>
           <span
-            className="head"
+            className="head pill"
             style={{
               background: m.played ? 'var(--grass)' : 'var(--grape)',
               color: '#fff',

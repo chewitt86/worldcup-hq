@@ -5,7 +5,7 @@
 export function Toast({ msg }: { msg?: string }) {
   if (!msg) return null;
   return (
-    <div style={{ position: "absolute", left: "50%", bottom: 22, transform: "translateX(-50%)",
+    <div className="pill" style={{ position: "absolute", left: "50%", bottom: 22, transform: "translateX(-50%)",
       zIndex: 60, background: "var(--ink)", color: "var(--cream)", fontFamily: "var(--head)",
       fontSize: 14, padding: "10px 18px", borderRadius: 999, border: "3px solid var(--cream)",
       boxShadow: "0 6px 0 rgba(27,42,74,.35)", whiteSpace: "nowrap",

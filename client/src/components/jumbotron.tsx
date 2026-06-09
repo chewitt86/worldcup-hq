@@ -65,7 +65,7 @@ export function Jumbotron({ t, big, title }: { t: Countdown; big: boolean; title
           background: 'repeating-linear-gradient(0deg, rgba(0,0,0,.5) 0 2px, transparent 2px 4px)' }} />
         {/* title banner */}
         <div style={{ display: 'flex', justifyContent: 'center', marginBottom: big ? 22 : 16, position: 'relative' }}>
-          <div className="head" style={{ background: 'var(--sun)', color: 'var(--ink)',
+          <div className="head pill" style={{ background: 'var(--sun)', color: 'var(--ink)',
             fontSize: big ? 30 : 19, letterSpacing: '1px', padding: big ? '8px 26px' : '6px 16px',
             borderRadius: 999, border: '3px solid var(--ink)', boxShadow: '3px 3px 0 rgba(0,0,0,.4)',
             whiteSpace: 'nowrap' }}>★ {banner} ★</div>

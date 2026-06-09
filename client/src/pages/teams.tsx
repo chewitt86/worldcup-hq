@@ -113,8 +113,8 @@ function TeamPopup({
           <div style={{ display: "flex", gap: 8, marginTop: 13 }}>
             <TierBadge tier={t.tier} />
             <OddsPill code={code} />
-            <span className="head" style={{ background: "var(--blue)", color: "#fff", fontSize: 12,
-              padding: "4px 11px", borderRadius: 999, border: "2.5px solid var(--ink)" }}>GROUP {g}</span>
+            <span className="head pill" style={{ background: "var(--blue)", color: "#fff", fontSize: 12,
+              padding: "6px 11px", borderRadius: 999, border: "2.5px solid var(--ink)" }}>GROUP {g}</span>
           </div>
         </div>
 
