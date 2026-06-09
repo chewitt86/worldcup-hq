@@ -13,7 +13,9 @@ export type Countdown = {
 
 export function useCountdown(target: number): Countdown {
   const calc = (): Countdown => {
-    const diff = Math.max(0, target - Date.now());
+    const t0 = Number(target);
+    // guard a missing/invalid kickoff so the digits never show NaN
+    const diff = Number.isFinite(t0) ? Math.max(0, t0 - Date.now()) : 0;
     return {
       d: Math.floor(diff / 86400000),
       h: Math.floor((diff / 3600000) % 24),

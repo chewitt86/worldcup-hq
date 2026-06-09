@@ -94,7 +94,10 @@ function extractBoard(s: StoreState): AppState {
    Zustand's vanilla setState shallow-merges, so the action functions survive. */
 function applyBoard(store: StoreApi<StoreState>, board: Partial<AppState>): void {
   const patch: Partial<AppState> = {};
-  if (board.settings) patch.settings = board.settings;
+  // MERGE settings onto the current ones (don't replace): a server board can
+  // legitimately carry only a subset of settings, and replacing would wipe the
+  // client's title/kickoff (→ NaN countdown + Admin crash).
+  if (board.settings) patch.settings = { ...store.getState().settings, ...board.settings };
   if (Array.isArray(board.people)) patch.people = board.people;
   if (board.teamEdits) patch.teamEdits = board.teamEdits;
   if (board.results) patch.results = board.results;

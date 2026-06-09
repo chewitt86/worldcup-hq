@@ -330,7 +330,12 @@ function AdminDashboard({ token, onLogout }: { token: string; onLogout: () => vo
                 style={inputStyle} /></Field>
             <Field label="Kick-off date & time" hint="Drives the countdown on the home screen.">
               <input type="datetime-local"
-                value={new Date(settings.kickoff - new Date().getTimezoneOffset() * 60000).toISOString().slice(0, 16)}
+                value={(() => {
+                  // guard an invalid/missing kickoff so toISOString() can't throw
+                  const ms = Number(settings.kickoff);
+                  if (!Number.isFinite(ms)) return '';
+                  return new Date(ms - new Date().getTimezoneOffset() * 60000).toISOString().slice(0, 16);
+                })()}
                 onChange={(e) => store.getState().setSettings({ kickoff: new Date(e.target.value).getTime() })}
                 style={inputStyle} /></Field>
           </AdminCard>

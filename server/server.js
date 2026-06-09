@@ -182,8 +182,13 @@ function mergeResultsIntoBoard(results, koLive, fixtures) {
   board.results = { ...(board.results || {}), ...(results || {}) };
   if (koLive) board.koLive = koLive;
   if (Array.isArray(fixtures) && fixtures.length) board.fixtures = fixtures;
-  board.settings = board.settings || {};
-  board.settings.lastSync = new Date().toISOString();
+  // IMPORTANT: never write board.settings here. The board's settings
+  // (title / kickoff / people) are owned by the client; stamping lastSync into a
+  // freshly-empty board created a partial settings object that wiped the client's
+  // title+kickoff on hydrate. Record the sync time in the admin config instead —
+  // which is where the admin panel reads "Last synced" from.
+  try { config.saveConfig({ settings: { lastSync: new Date().toISOString() } }); }
+  catch (e) { /* best-effort timestamp */ }
   return state.write(board);
 }
 
