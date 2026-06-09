@@ -183,7 +183,7 @@ function ProviderRow({
 
 /* ---------- the panel ---------- */
 export function ApiConnections({ token }: { token: string }) {
-  const { ping } = useApp();
+  const { ping, setAdminAuthed } = useApp();
   const [cfg, setCfg] = useState<AdminConfig | null>(null);
   const [newName, setNewName] = useState('');
   const [testingId, setTestingId] = useState<string | null>(null);
@@ -191,10 +191,14 @@ export function ApiConnections({ token }: { token: string }) {
   useEffect(() => {
     let alive = true;
     getAdminConfig(token).then((res) => {
-      if (alive && res && res.settings && res.providers) setCfg(res as AdminConfig);
+      if (!alive) return;
+      if (res && res.settings && res.providers) setCfg(res as AdminConfig);
+      // a bad/expired token (e.g. the server restarted on a deploy, clearing
+      // in-memory tokens) → drop back to the login screen instead of hanging.
+      else setAdminAuthed(false);
     });
     return () => { alive = false; };
-  }, [token]);
+  }, [token, setAdminAuthed]);
 
   /* adopt an authoritative masked-config response from the server. */
   const adopt = (res: unknown) => {

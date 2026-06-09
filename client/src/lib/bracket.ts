@@ -12,6 +12,7 @@
 import { TEAMS, type Team } from '../data/teams';
 import {
   GROUPS,
+  GROUP_FIXTURES,
   ELIMINATED,
   computeStandings,
   table,
@@ -177,9 +178,46 @@ export function qualifiers(standings: Record<string, Standing>): string[] {
    resolves every tie from saved results (if played) or projection, and
    propagates the ACTUAL winners into the next round. Pre-tournament (no results)
    the 32 strongest-by-odds qualify and seed — the correct projection. */
+/* Every group round-robin game has a played score → the qualifiers are known. */
+function groupStageComplete(results: BracketState['results']): boolean {
+  for (const g of Object.keys(GROUP_FIXTURES)) {
+    for (const fx of GROUP_FIXTURES[g]) {
+      if (!results[fx.id] || !results[fx.id].played) return false;
+    }
+  }
+  return true;
+}
+
+/* Does the feed carry a real (fully-drawn) knockout round? */
+function hasRealKoLive(koLive: KoLive | null | undefined): boolean {
+  if (!koLive) return false;
+  return STAGES.some((s) => {
+    const arr = koLive[s];
+    return !!arr && arr.length === ROUND_COUNT[s] && arr.every((t) => t.a && t.b);
+  });
+}
+
+/* A blank bracket: every slot "TBD". Used before the knockout teams are known. */
+function tbdTies(n: number): Tie[] {
+  return Array.from({ length: n }, () => ({ a: '', b: '', w: '' }));
+}
+function tbdBracket(): Bracket {
+  return {
+    r32: tbdTies(16), r16: tbdTies(8), qf: tbdTies(4), sf: tbdTies(2),
+    final: { a: '', b: '', w: '' }, champ: '', seeds: [],
+  };
+}
+
 export function buildBracket(state: BracketState): Bracket {
   const { results, teams, koLive } = state;
   const standings = computeStandings(results);
+
+  /* Until the group stage finishes (so the qualifiers are real) — or the feed
+     delivers an actual knockout draw — the knockout teams aren't known. Show a
+     blank/TBD bracket rather than an odds-based prediction. */
+  if (!groupStageComplete(results) && !hasRealKoLive(koLive)) {
+    return tbdBracket();
+  }
 
   // the 32 qualifiers, ordered strongest-first (seed1 = index 0)
   const seeds = qualifiers(standings).sort(

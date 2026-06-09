@@ -110,9 +110,9 @@ function TieCard({
       style={{ width: "100%", background: "#0c1838", border: "2px solid #2c4378",
       borderRadius: 10, overflow: "hidden", boxShadow: big ? "0 0 16px rgba(255,210,63,.4)" : "0 2px 0 rgba(0,0,0,.3)" }}>
       {[tie.a, tie.b].map((code, i) => {
-        const win = actualWin === code, dead = koDead(code);
+        const win = !!code && actualWin === code, dead = koDead(code);
         return (
-          <div key={code} style={{ display: "flex", alignItems: "center", gap: 6, padding: big ? "9px 11px" : "6px 8px",
+          <div key={i} style={{ display: "flex", alignItems: "center", gap: 6, padding: big ? "9px 11px" : "6px 8px",
             background: win ? "var(--sun)" : "transparent", borderTop: i ? "1px solid #1b2a4a" : "none", opacity: dead ? 0.5 : 1 }}>
             <Flag code={code} knocked={dead} style={{ width: big ? 30 : 22, height: big ? 21 : 15 }} />
             <span className="head" style={{ fontSize: big ? 16 : 13.5, color: win ? "var(--ink)" : "#d4ddf2" }}>
@@ -297,6 +297,24 @@ function ChampionHero({
   teams: Record<string, Team>;
 }) {
   const t = teams[champ];
+  // Before the knockout teams are known, show a "to be decided" hero, not a pick.
+  if (!t) {
+    return (
+      <div className="sticker" style={{ position: "relative", padding: "16px 18px", overflow: "hidden",
+        background: "radial-gradient(circle at 28% 18%, #2a3e72, #0c1838)", border: "4px solid var(--sun)",
+        boxShadow: "0 0 26px rgba(255,210,63,.45), 5px 6px 0 rgba(0,0,0,.4)",
+        display: "flex", alignItems: "center", gap: 16 }}>
+        <div style={{ fontSize: 52, lineHeight: 1, animation: "wchq-bob 3.4s ease-in-out infinite",
+          filter: "drop-shadow(0 4px 8px rgba(0,0,0,.4))" }}>🏆</div>
+        <div style={{ flex: 1, minWidth: 0 }}>
+          <div className="head" style={{ color: "var(--sun)", fontSize: 12, letterSpacing: "1.5px" }}>WHO WILL WIN?</div>
+          <div className="head" style={{ color: "#fff", fontSize: 22, marginTop: 5 }}>To be decided!</div>
+          <div style={{ color: "#9fb2d4", fontWeight: 700, fontSize: 13, marginTop: 6 }}>
+            The knockout bracket fills in once the group stage finishes. ⚽</div>
+        </div>
+      </div>
+    );
+  }
   return (
     <div className="sticker" style={{ position: "relative", padding: "16px 18px", overflow: "hidden",
       background: "radial-gradient(circle at 28% 18%, #2a3e72, #0c1838)", border: "4px solid var(--sun)",
@@ -369,6 +387,7 @@ export function KnockoutPage() {
   // knockout scores and odds-edits feed the projection
   const b = useMemo(() => buildBracket({ results, teams, koLive }), [results, teams, koLive]);
   const runnerUp = b.final.a === b.champ ? b.final.b : b.final.a;
+  const tbd = !b.champ; // bracket not yet decided (group stage still to finish)
   const apiRef = useRef<PanZoomHandle | null>(null);
   const onReady = useCallback((api: PanZoomHandle) => { apiRef.current = api; }, []);
   const centers8 = Array.from({ length: 8 }, (_, i) => 50 + (i + 0.5) * (530 / 8));
@@ -405,7 +424,9 @@ export function KnockoutPage() {
 
   return (
     <Fragment>
-      <PageTitle sub="✨ projected road to the final — tap a game for kick-off & venue" accent="var(--grape)">
+      <PageTitle sub={tbd
+        ? '🎟 teams qualify from the group stage — tap a game for kick-off & venue'
+        : '✨ projected road to the final — tap a game for kick-off & venue'} accent="var(--grape)">
         KNOCKOUTS</PageTitle>
 
       <ChampionHero champ={b.champ} runnerUp={runnerUp} onTeam={setTeam} teams={teams} />
