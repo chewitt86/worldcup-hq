@@ -45,9 +45,10 @@ export const TIER_COLOUR: Record<string, string> = {
 
 export function TierBadge({ tier, small }: { tier: string; small?: boolean }) {
   return (
-    <span className="head" style={{ background: TIER_COLOUR[tier] || 'var(--cream2)',
+    <span className="head" style={{ display: 'inline-flex', alignItems: 'center',
+      lineHeight: 1, background: TIER_COLOUR[tier] || 'var(--cream2)',
       color: 'var(--ink)', fontSize: small ? 10 : 12, letterSpacing: '.5px',
-      padding: small ? '2px 8px' : '3px 10px', borderRadius: 999,
+      padding: small ? '5px 9px' : '6px 11px', borderRadius: 999,
       border: '2.5px solid var(--ink)', whiteSpace: 'nowrap',
       boxShadow: '1.5px 2px 0 rgba(27,42,74,.7)' }}>{tier}</span>
   );
@@ -61,10 +62,11 @@ export function OddsPill({ code, label = 'to win' }: { code: string; label?: str
   const odds = teams[code]?.odds || '—';
   return (
     <span className="head" style={{ display: 'inline-flex', alignItems: 'center', gap: 6,
-      background: 'var(--ink)', color: 'var(--sun)', fontSize: 13, padding: '4px 11px',
-      borderRadius: 999, border: '2.5px solid var(--ink)' }}>
-      <span style={{ fontSize: 14 }}>{odds}</span>
-      <span style={{ fontSize: 9, color: 'var(--cream)', opacity: .75 }}>{label}</span>
+      lineHeight: 1, background: 'var(--ink)', color: 'var(--sun)', fontSize: 13,
+      padding: '5px 11px', borderRadius: 999, border: '2.5px solid var(--ink)' }}>
+      <span style={{ fontSize: 14, lineHeight: 1 }}>{odds}</span>
+      <span style={{ fontSize: 9, lineHeight: 1, color: 'var(--cream)', opacity: .75,
+        letterSpacing: '.3px', paddingTop: 1 }}>{label}</span>
     </span>
   );
 }
