@@ -15,7 +15,9 @@ export function flagCss(t: string | Team): string {
     return `linear-gradient(90deg, ${stops})`;
   }
   if (team.dir === 'cross') {
-    return `${c[1]} url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='22' height='16'%3E%3Crect width='22' height='16' fill='${encodeURIComponent(c[0])}'/%3E%3Crect x='9' width='4' height='16' fill='${encodeURIComponent(c[1])}'/%3E%3Crect y='6' width='22' height='4' fill='${encodeURIComponent(c[1])}'/%3E%3C/svg%3E")`;
+    // a single centred cross that FILLS the flag (no-repeat) instead of tiling
+    // into a checkered grid (St George / Scandinavian crosses).
+    return `${c[1]} url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='22' height='16'%3E%3Crect width='22' height='16' fill='${encodeURIComponent(c[0])}'/%3E%3Crect x='9' width='4' height='16' fill='${encodeURIComponent(c[1])}'/%3E%3Crect y='6' width='22' height='4' fill='${encodeURIComponent(c[1])}'/%3E%3C/svg%3E") center / 100% 100% no-repeat`;
   }
   if (team.dir === 'centre') {
     return `radial-gradient(circle at 50% 50%, ${c[1]} 0 30%, ${c[0]} 31%)`;

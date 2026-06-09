@@ -13,16 +13,16 @@ import { useEffect, useRef, useState, type CSSProperties } from 'react';
 import { createPortal } from 'react-dom';
 
 /* ---- tunable feel ---- */
-const GRAVITY = 520;        // px/s²
-const BOUNCE = 640;         // upward kick on tap (px/s)
-const POOL = 14;            // max balls on screen
+const GRAVITY = 440;        // px/s² (gentle, so they're easy to track)
+const BOUNCE = 600;         // upward kick on tap (px/s)
+const POOL = 24;            // max balls (alive + the ones resting out on the grass)
 const BATCH = 6;            // active at kick-off
-const DRIP_EVERY = 2.5;     // a new ball every N seconds…
+const DRIP_EVERY = 3;       // a new ball every N seconds…
 const ROUND = 60;           // …for a 60-second round
 const GRASS = 64;           // grass strip height (the floor)
 const BEST_KEY = 'wchq.keepy.best';
 
-interface Ball { x: number; y: number; vx: number; vy: number; active: boolean; pop: number; el: HTMLDivElement | null; }
+interface Ball { x: number; y: number; vx: number; vy: number; active: boolean; dead: boolean; pop: number; el: HTMLDivElement | null; }
 
 function Football({ size }: { size: number }) {
   return (
@@ -43,9 +43,15 @@ function readBest(): number {
 
 export function KeepyUppy({ onClose, wide }: { onClose: () => void; wide: boolean }) {
   const SIZE = wide ? 64 : 86; // footballs are bigger on mobile (easier to tap)
+  // a generous tap target: padded a bit each side and a LOT just below the ball
+  const PAD_X = Math.round(SIZE * 0.2);
+  const PAD_TOP = Math.round(SIZE * 0.12);
+  const PAD_BOTTOM = Math.round(SIZE * 0.5);
+  const HIT_W = SIZE + PAD_X * 2;
+  const HIT_H = SIZE + PAD_TOP + PAD_BOTTOM;
   const sceneRef = useRef<HTMLDivElement | null>(null);
   const balls = useRef<Ball[]>(
-    Array.from({ length: POOL }, (): Ball => ({ x: 0, y: 0, vx: 0, vy: 0, active: false, pop: 0, el: null })),
+    Array.from({ length: POOL }, (): Ball => ({ x: 0, y: 0, vx: 0, vy: 0, active: false, dead: false, pop: 0, el: null })),
   );
   const bounceRef = useRef<(i: number) => void>(() => {});
   const replayRef = useRef<() => void>(() => {});
@@ -68,13 +74,13 @@ export function KeepyUppy({ onClose, wide }: { onClose: () => void; wide: boolea
       b.y = -SIZE - Math.random() * 60;
       b.vx = (Math.random() - 0.5) * 110;
       b.vy = 40 + Math.random() * 40;
-      b.pop = 0; b.active = true;
+      b.pop = 0; b.active = true; b.dead = false;
     };
 
     const startRound = () => {
       scoreV = 0; setScore(0);
       elapsed = 0; dripT = 0; shown = ROUND; setTime(ROUND); setPhase('play');
-      for (const b of arr) { b.active = false; b.pop = 0; if (b.el) b.el.style.display = 'none'; }
+      for (const b of arr) { b.active = false; b.dead = false; b.pop = 0; if (b.el) b.el.style.display = 'none'; }
       for (let i = 0; i < BATCH && i < arr.length; i++) spawn(arr[i]);
       last = performance.now(); running = true;
     };
@@ -94,7 +100,7 @@ export function KeepyUppy({ onClose, wide }: { onClose: () => void; wide: boolea
         elapsed += dt; dripT += dt;
         if (dripT >= DRIP_EVERY) {
           dripT = 0;
-          const free = arr.find((b) => !b.active);
+          const free = arr.find((b) => !b.active && !b.dead);
           if (free) spawn(free);
         }
         const left = Math.max(0, Math.ceil(ROUND - elapsed));
@@ -112,19 +118,28 @@ export function KeepyUppy({ onClose, wide }: { onClose: () => void; wide: boolea
           const w = scene?.clientWidth ?? 360;
           const floor = (scene?.clientHeight ?? 640) - GRASS - SIZE * 0.85;
           for (const b of arr) {
-            if (!b.active) { if (b.el) b.el.style.display = 'none'; continue; }
+            if (!b.active && !b.dead) { if (b.el) b.el.style.display = 'none'; continue; }
+            if (b.dead) {                         // out — resting on the grass, not tappable
+              if (b.el) {
+                b.el.style.display = 'block'; b.el.style.opacity = '0.4'; b.el.style.pointerEvents = 'none';
+                b.el.style.transform = `translate3d(${b.x - PAD_X}px,${b.y - PAD_TOP}px,0)`;
+              }
+              continue;
+            }
             b.vy += GRAVITY * dt; b.x += b.vx * dt; b.y += b.vy * dt;
             if (b.x < 0) { b.x = 0; b.vx = Math.abs(b.vx) * 0.85; }
             else if (b.x > w - SIZE) { b.x = w - SIZE; b.vx = -Math.abs(b.vx) * 0.85; }
-            if (b.y >= floor) {                 // bounce off the grass, losing energy, then settle
-              b.y = floor;
-              if (b.vy > 90) { b.vy = -b.vy * 0.55; b.vx *= 0.85; }
-              else { b.vy = 0; b.vx *= 0.78; }
-            }
+            if (b.y >= floor) { b.active = false; b.dead = true; b.y = floor; b.vx = 0; b.vy = 0; } // hit the ground → out
             if (b.pop > 0) b.pop = Math.max(0, b.pop - dt * 5);
             if (b.el) {
-              b.el.style.display = b.active ? 'block' : 'none';
-              b.el.style.transform = `translate3d(${b.x}px,${b.y}px,0) scale(${1 + 0.28 * b.pop})`;
+              b.el.style.display = 'block';
+              if (b.dead) {
+                b.el.style.opacity = '0.4'; b.el.style.pointerEvents = 'none';
+                b.el.style.transform = `translate3d(${b.x - PAD_X}px,${b.y - PAD_TOP}px,0)`;
+              } else {
+                b.el.style.opacity = '1'; b.el.style.pointerEvents = 'auto';
+                b.el.style.transform = `translate3d(${b.x - PAD_X}px,${b.y - PAD_TOP}px,0) scale(${1 + 0.28 * b.pop})`;
+              }
             }
           }
         }
@@ -179,10 +194,11 @@ export function KeepyUppy({ onClose, wide }: { onClose: () => void; wide: boolea
       {Array.from({ length: POOL }).map((_, i) => (
         <div key={i} ref={(el) => { const b = balls.current[i]; if (b) b.el = el; }}
           onClick={() => bounceRef.current(i)}
-          style={{ position: 'absolute', left: 0, top: 0, width: SIZE, height: SIZE, display: 'none',
+          style={{ position: 'absolute', left: 0, top: 0, width: HIT_W, height: HIT_H, display: 'none',
             willChange: 'transform', cursor: 'pointer', outline: 'none',
+            transformOrigin: `${((PAD_X + SIZE / 2) / HIT_W) * 100}% ${((PAD_TOP + SIZE / 2) / HIT_H) * 100}%`,
             WebkitTapHighlightColor: 'transparent', WebkitUserSelect: 'none', userSelect: 'none' }}>
-          <Football size={SIZE} />
+          <div style={{ position: 'absolute', left: PAD_X, top: PAD_TOP }}><Football size={SIZE} /></div>
         </div>
       ))}
 

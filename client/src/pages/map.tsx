@@ -178,7 +178,9 @@ export function MapPage() {
                   <OwnerIcons code={gm.opp} people={people} size={16} max={1} />
                   {gm.played
                     ? <span className="head" style={{ fontSize: 16, color: resCol }}>{gm.score![0]}–{gm.score![1]}</span>
-                    : <span className="head" style={{ fontSize: 11, color: 'var(--tomato)' }}>{gm.time} BST</span>}
+                    : gm.time
+                      ? <span className="head" style={{ fontSize: 11, color: 'var(--tomato)' }}>{gm.time} BST</span>
+                      : <span className="head" style={{ fontSize: 11, opacity: .5 }}>TBC</span>}
                 </div>
               );
             })}

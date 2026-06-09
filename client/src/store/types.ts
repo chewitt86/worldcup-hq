@@ -50,6 +50,8 @@ export interface Settings {
   lastSync: string | null;
   pin: string;
   providers: Record<string, Provider>;
+  /* when true, poking the mascot always opens the hidden keepy-uppy game */
+  alwaysGame?: boolean;
 }
 
 /* A saved match result overlay entry, keyed by "stage:index". */

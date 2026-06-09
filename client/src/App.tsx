@@ -51,8 +51,8 @@ const REACTIONS: Reaction[] = [
 
 const SECRET_CHANCE = 0.12; // chance a poke reveals the hidden keepy-uppy game
 
-function Mascot({ burst, goalCelebrate, onSecret, wide }:
-  { burst: () => void; goalCelebrate: () => void; onSecret: () => void; wide: boolean }) {
+function Mascot({ burst, goalCelebrate, onSecret, alwaysGame, wide }:
+  { burst: () => void; goalCelebrate: () => void; onSecret: () => void; alwaysGame: boolean; wide: boolean }) {
   const [react, setReact] = useState<Reaction | null>(null);
   const [bubble, setBubble] = useState<string | null>(null);
   const [secret, setSecret] = useState(false);
@@ -74,7 +74,7 @@ function Mascot({ burst, goalCelebrate, onSecret, wide }:
     setReact(null);
     requestAnimationFrame(() => setReact(r));
     clearTimeout(bubbleTimer.current);
-    if (Math.random() < SECRET_CHANCE) {
+    if (alwaysGame || Math.random() < SECRET_CHANCE) {
       // the secret: tap the bubble to drop into the keepy-uppy game
       setSecret(true);
       setBubble('Keepy uppies?! 👀');
@@ -227,7 +227,7 @@ function App() {
           </div>
         </div>
 
-        <Mascot burst={burst} goalCelebrate={goalCelebrate} onSecret={() => setGame(true)} wide={wide} />
+        <Mascot burst={burst} goalCelebrate={goalCelebrate} onSecret={() => setGame(true)} alwaysGame={!!settings.alwaysGame} wide={wide} />
         {game && <KeepyUppy onClose={() => setGame(false)} wide={wide} />}
         <Toast msg={toast ?? undefined} />
         <PersonPopup person={person} onClose={() => setPerson(null)} />
