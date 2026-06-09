@@ -19,10 +19,14 @@ behind CGNAT. Your app already has a `cloudflared` service stubbed in `docker-co
    minutes to a few hours; Cloudflare emails you when it's **Active**.
 
 ### 2. Create the tunnel
-1. In the Cloudflare dashboard → **Zero Trust** (left menu) → **Networks → Tunnels** →
-   **Create a tunnel** → **Cloudflared** → name it e.g. `worldcup` → **Save**.
-2. On the "Install connector" screen, copy the **token** (the long string after
-   `--token` in the example command). That's all you need from here.
+> Cloudflare renamed these menus in 2026 — current paths below.
+1. Cloudflare dashboard → **Zero Trust** (opens `one.dash.cloudflare.com`) →
+   **Networks** → **Connectors** → **Cloudflare Tunnels** → **Create a tunnel**.
+2. Connector type **Cloudflared** → **Next** → enter a name (e.g. `worldcup`) → **Save tunnel**.
+3. On the **"Choose an environment"** install screen, click the **Docker** tab. You'll see a
+   command containing `--token eyJ...`. **Copy only the token** (the long `eyJ...` string) —
+   don't run the command; your compose file runs cloudflared for you. Then click **Next**
+   (the connector goes green once you deploy in step 3).
 
 ### 3. Run the connector on Unraid
 The `cloudflared` service is already in `docker-compose.yml` behind a `tunnel` profile, so you
@@ -44,9 +48,11 @@ Then bring it up (this also starts the cloudflared container):
 The tunnel shows as **Healthy/Connected** back on the Cloudflare Tunnels page.
 
 ### 4. Point the hostname at the app
-1. Back in the tunnel → **Public Hostname** tab → **Add a public hostname**:
+1. Open your tunnel (Zero Trust → Networks → Connectors → Cloudflare Tunnels → click it →
+   **Edit**) and go to the **Published applications** tab (this is what used to be called
+   "Public Hostname"). Select **Add a published application** (or **+ Add**):
    - **Subdomain:** leave blank (for the bare domain) — or `www`.
-   - **Domain:** `leosworldcup.co.uk`.
+   - **Domain:** `leosworldcup.co.uk` (pick it from the dropdown).
    - **Service → Type:** `HTTP`. **URL:** `worldcup-hq:3050`
      (the container name + port — both containers share the compose network, so no IP needed).
 2. **Save**. Optionally add a second hostname for `www.leosworldcup.co.uk` the same way.
