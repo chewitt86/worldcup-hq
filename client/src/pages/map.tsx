@@ -217,8 +217,7 @@ export function MapPage() {
       </div>
 
       {popup && <TeamPopup code={popup} onClose={() => setPopup(null)} onPerson={app.openPerson} />}
-      {match && <MatchPopup match={match} people={people} onClose={() => setMatch(null)}
-        onTeam={(c) => { setMatch(null); setPopup(c); }} />}
+      {match && <MatchPopup match={match} people={people} onClose={() => setMatch(null)} />}
     </Fragment>
   );
 }

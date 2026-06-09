@@ -4,6 +4,7 @@
 import { Flag } from './flag';
 import { Avatar } from './avatar';
 import { ModalOverlay } from './modal';
+import { useApp } from '../app/context';
 import { ELIMINATED, backers } from '../data/tournament';
 import { TEAMS, type Person } from '../data/teams';
 
@@ -25,14 +26,13 @@ export interface Match {
 function MatchPopup({
   match,
   onClose,
-  onTeam,
   people,
 }: {
   match: Match | null | undefined;
   onClose?: () => void;
-  onTeam?: (code: string) => void;
   people?: Person[];
 }) {
+  const { openTeam } = useApp();
   if (!match) return null;
   const m = match;
   const hostName =
@@ -47,7 +47,7 @@ function MatchPopup({
     return (
       <div
         className="tap"
-        onClick={() => onTeam && onTeam(code)}
+        onClick={() => { onClose?.(); openTeam(code); }}
         style={{
           display: 'flex',
           alignItems: 'center',

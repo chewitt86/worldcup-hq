@@ -176,6 +176,9 @@ function App() {
   // welcome confetti
   useEffect(() => { const id = setTimeout(burst, 400); return () => clearTimeout(id); }, []);
 
+  // close any open popup when the section changes (e.g. browser back/forward)
+  useEffect(() => { setPerson(null); setTeamCode(null); }, [page]);
+
   const ctx: AppContextValue = {
     wide, page, go, ping, burst, goalCelebrate, openPerson, openTeam,
     mapFocus, setMapFocus,

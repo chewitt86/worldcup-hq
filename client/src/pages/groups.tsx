@@ -164,8 +164,7 @@ export function GroupsPage() {
         ))}
       </div>
       {team && <TeamPopup code={team} onClose={() => setTeam(null)} onPerson={app.openPerson} />}
-      {match && <MatchPopup match={match} people={people} onClose={() => setMatch(null)}
-        onTeam={(c) => { setMatch(null); setTeam(c); }} />}
+      {match && <MatchPopup match={match} people={people} onClose={() => setMatch(null)} />}
     </>
   );
 }
