@@ -1,5 +1,28 @@
 import { describe, expect, test } from 'vitest';
-import { TEAMS, PEOPLE, TICKER, NEXTUP, KICKOFF } from './teams';
+import { TEAMS, PEOPLE, TICKER, NEXTUP, KICKOFF, WORST_TEAMS } from './teams';
+
+describe('best / worst pots + rankings', () => {
+  test('exactly 24 worst teams, all real', () => {
+    expect(WORST_TEAMS).toHaveLength(24);
+    expect(new Set(WORST_TEAMS).size).toBe(24);
+    for (const c of WORST_TEAMS) expect(TEAMS[c]?.worst, c).toBe(true);
+  });
+
+  test('every team carries a world ranking and a worst flag', () => {
+    for (const c of Object.keys(TEAMS)) {
+      expect(typeof TEAMS[c].worldRanking, c).toBe('number');
+      expect(typeof TEAMS[c].worst, c).toBe('boolean');
+    }
+  });
+
+  test('each player has exactly one best + one worst, and best is the best-pot team', () => {
+    for (const p of PEOPLE) {
+      const worsts = p.teams.filter((c) => TEAMS[c].worst);
+      expect(worsts.length, p.name).toBe(1);
+      expect(TEAMS[p.best].worst, `${p.name} best`).toBe(false);
+    }
+  });
+});
 
 describe('teams data', () => {
   test('48 teams in total', () => {
@@ -43,9 +66,10 @@ describe('the family draw', () => {
     expect(new Set(ids).size).toBe(ids.length);
   });
 
-  test('Leo drew Canada + Türkiye', () => {
+  test('Leo drew Türkiye + Canada (best-pot team first)', () => {
     const leo = PEOPLE.find((p) => p.id === 'leo')!;
-    expect(leo.teams).toEqual(['CAN', 'TUR']);
+    expect(leo.teams).toEqual(['TUR', 'CAN']);
+    expect(leo.best).toBe('TUR');
   });
 });
 

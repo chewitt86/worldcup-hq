@@ -185,7 +185,7 @@ function PersonEditor({ p }: { p: Person }) {
         <Avatar person={p} size={40} />
         <div style={{ flex: 1, minWidth: 0 }}>
           <div className="head" style={{ fontSize: 16 }}>{p.name}</div>
-          <div style={{ fontSize: 11, fontWeight: 700, opacity: .6 }}>✅ {stillIn} in · ❌ {p.out.length} out · {p.points} pts</div>
+          <div style={{ fontSize: 11, fontWeight: 700, opacity: .6 }}>✅ {stillIn} in · ❌ {p.out.length} out</div>
         </div>
         <span className="head" style={{ fontSize: 14, opacity: .5, transition: 'transform .2s',
           transform: open ? 'rotate(180deg)' : 'none' }}>▾</span>
@@ -193,14 +193,9 @@ function PersonEditor({ p }: { p: Person }) {
 
       {open && (
         <div style={{ padding: '4px 13px 14px', borderTop: '2px dashed rgba(27,42,74,.15)' }}>
-          <div style={{ display: 'flex', gap: 10, marginTop: 12 }}>
+          <div style={{ marginTop: 12 }}>
             <Field label="Name"><input value={name} onChange={(e) => setName(e.target.value)}
               onBlur={() => store.getState().updatePerson(p.id, { name })} style={inputStyle} /></Field>
-            <div style={{ width: 92, flex: '0 0 auto' }}>
-              <Field label="Points"><input type="number" value={p.points}
-                onChange={(e) => store.getState().updatePerson(p.id, { points: parseInt(e.target.value) || 0 })}
-                style={{ ...inputStyle, textAlign: 'center' }} /></Field>
-            </div>
           </div>
 
           <Field label="Colour">

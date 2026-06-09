@@ -16,8 +16,10 @@ import {
 } from '../data/tournament';
 import { Flag } from '../components/flag';
 import { Avatar } from '../components/avatar';
-import { PageTitle, TierBadge, OddsPill, Backers } from '../components/labels';
+import { PageTitle, TierBadge, OddsPill, Backers, DrawTier } from '../components/labels';
 import { ModalOverlay } from '../components/modal';
+import { buildBracket, deepestRound, ROUND_LABEL } from '../lib/bracket';
+import { teamPoints, started } from '../lib/scoring';
 
 function TeamCard({
   code,
@@ -53,7 +55,10 @@ function TeamCard({
       </div>
       <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between",
         gap: 8, marginTop: 12, opacity: dead ? .6 : 1 }}>
-        <TierBadge tier={t.tier} small />
+        <div style={{ display: "flex", alignItems: "center", gap: 6, flexWrap: "wrap" }}>
+          <TierBadge tier={t.tier} small />
+          <DrawTier code={code} />
+        </div>
         <OddsPill code={code} />
       </div>
       <div style={{ display: "flex", alignItems: "center", gap: 7, marginTop: 11,
@@ -76,8 +81,13 @@ function TeamPopup({
 }) {
   const teams = useStore(selectTeams);
   const storeResults = useStore((s) => s.results);
+  const koLive = useStore((s) => s.koLive);
   const standings = useMemo(() => computeStandings(storeResults), [storeResults]);
-  const { people, go, setMapFocus, page } = useApp();
+  const bracket = useMemo(() => buildBracket({ results: storeResults, teams, koLive }),
+    [storeResults, teams, koLive]);
+  const { people, go, setMapFocus, page, settings } = useApp();
+  const ctx = { teams, standings, bracket };
+  const isLive = started(storeResults, settings?.kickoff);
   if (!code) return null;
   const t = teams[code];
   const g = groupOf(code) as string;
@@ -109,11 +119,16 @@ function TeamPopup({
               <div style={{ fontWeight: 700, fontSize: 12, color: "#7fa8e6", marginTop: 3 }}>{t.titles}</div>
             </div>
           </div>
-          <div style={{ display: "flex", gap: 8, marginTop: 13 }}>
+          <div style={{ display: "flex", gap: 8, marginTop: 13, flexWrap: "wrap" }}>
             <TierBadge tier={t.tier} />
             <OddsPill code={code} />
             <span className="head pill" style={{ background: "var(--blue)", color: "#fff", fontSize: 12,
               padding: "6px 11px", borderRadius: 999, border: "2.5px solid var(--ink)" }}>GROUP {g}</span>
+            <DrawTier code={code} />
+          </div>
+          <div style={{ marginTop: 10, fontWeight: 700, fontSize: 12.5, color: "#9fb2d4" }}>
+            🌐 World #{t.worldRanking ?? "—"}
+            {isLive && ` · 🏆 ${teamPoints(code, ctx)} pts · ${ROUND_LABEL[deepestRound(code, bracket)]}`}
           </div>
         </div>
 

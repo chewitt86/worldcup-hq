@@ -13,6 +13,10 @@ export interface Team {
   titles?: string;
   fact?: string;
   squad?: string;
+  /* FIFA world ranking (from the real draw) */
+  worldRanking?: number;
+  /* true if this team is in the "worst" sweepstake pot (vs a "best" team) */
+  worst?: boolean;
 }
 
 export interface Person {
@@ -184,6 +188,25 @@ const SQUAD_SLUG: Record<string, string> = {
   COD: 'congo-dr',
 };
 
+/* ---- real-draw extras: FIFA world ranking + the "worst" sweepstake pot ---- */
+export const RANKING: Record<string, number> = {
+  FRA: 1, ESP: 2, ARG: 3, ENG: 4, POR: 5, BRA: 6, NED: 7, MAR: 8, BEL: 9, GER: 10,
+  CRO: 11, COL: 13, SEN: 14, MEX: 15, USA: 16, URU: 17, JPN: 18, SUI: 19, IRN: 21,
+  TUR: 22, ECU: 23, AUT: 24, KOR: 25, AUS: 27, ALG: 28, EGY: 29, CAN: 30, NOR: 31,
+  PAN: 33, CIV: 34, SWE: 38, PAR: 40, CZE: 41, SCO: 43, TUN: 44, COD: 46, UZB: 50,
+  QAT: 55, IRQ: 57, RSA: 60, KSA: 61, JOR: 63, BIH: 65, CPV: 69, GHA: 74, CUW: 82,
+  HAI: 83, NZL: 85,
+};
+
+/* The 24 "worst" teams (one per player); the other 24 are "best". */
+export const WORST_TEAMS: string[] = [
+  'ALG', 'BIH', 'CPV', 'CAN', 'CIV', 'CUW', 'CZE', 'COD', 'EGY', 'GHA', 'IRQ', 'JOR',
+  'NZL', 'NOR', 'PAN', 'PAR', 'KSA', 'SCO', 'RSA', 'SWE', 'TUN', 'UZB', 'HAI', 'QAT',
+];
+export function isWorst(code: string): boolean {
+  return WORST_TEAMS.includes(code);
+}
+
 /* Merge base + extra, apply META (titles/fact) and the FIFA squad-URL logic.
    Mirrors the prototype's Object.assign + forEach steps exactly. */
 function buildTeams(): Record<string, Team> {
@@ -202,6 +225,8 @@ function buildTeams(): Record<string, Team> {
       const slug = SQUAD_SLUG[code] || teams[code].name.toLowerCase().replace(/\s+/g, '-');
       teams[code].squad = FIFA_BASE + slug + '/squad';
     }
+    teams[code].worldRanking = RANKING[code];
+    teams[code].worst = WORST_TEAMS.includes(code);
   }
   return teams;
 }
@@ -224,7 +249,7 @@ export const PEOPLE: Person[] = [
   { id: 'jamie', name: 'Jamie', initials: 'JA', colour: '#7e57c2', points: 0, teams: ['ECU', 'NZL'], out: [], best: 'ECU' },
   { id: 'jodie', name: 'Jodie', initials: 'JO', colour: '#26c6da', points: 0, teams: ['CRO', 'EGY'], out: [], best: 'CRO' },
   { id: 'leah', name: 'Leah', initials: 'LH', colour: '#ff9f1c', points: 0, teams: ['JPN', 'COD'], out: [], best: 'JPN' },
-  { id: 'leo', name: 'Leo', initials: 'LE', colour: '#36a9ff', points: 0, teams: ['CAN', 'TUR'], out: [], best: 'CAN' },
+  { id: 'leo', name: 'Leo', initials: 'LE', colour: '#36a9ff', points: 0, teams: ['TUR', 'CAN'], out: [], best: 'TUR' },
   { id: 'lou', name: 'Lou', initials: 'LO', colour: '#46b94a', points: 0, teams: ['AUS', 'CUW'], out: [], best: 'AUS' },
   { id: 'michelle', name: 'Michelle', initials: 'MI', colour: '#9b6cf0', points: 0, teams: ['MEX', 'RSA'], out: [], best: 'MEX' },
   { id: 'nana', name: 'Nana', initials: 'NA', colour: '#ff5d5d', points: 0, teams: ['POR', 'SWE'], out: [], best: 'POR' },

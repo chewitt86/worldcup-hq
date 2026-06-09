@@ -3,13 +3,17 @@
    `selectTeams` selector so admin team-edits propagate live. */
 
 import { Fragment, useMemo } from 'react';
-import type { Person } from '../data/teams';
+import { type Person, WORST_TEAMS } from '../data/teams';
 import { useApp } from '../app/context';
 import { useStore, selectTeams } from '../store/store';
+import { computeStandings } from '../data/tournament';
+import { buildBracket, deepestRound, ROUND_LABEL } from '../lib/bracket';
+import { rankTeams, rankPlayers, bestOfWorst, playerTotal, teamPoints, started } from '../lib/scoring';
 import { Avatar } from '../components/avatar';
 import { Flag } from '../components/flag';
 import { PageTitle } from '../components/labels';
 import { Podium } from '../components/podium';
+import { TeamSpotlight } from '../components/team-spotlight';
 
 /* a player is eliminated when they hold teams and every one is knocked out */
 export function isEliminated(p: Person): boolean {
@@ -19,11 +23,13 @@ export function isEliminated(p: Person): boolean {
 function PersonCard({
   p,
   rank,
+  total,
   onPerson,
   wide,
 }: {
   p: Person;
   rank: number;
+  total: number;
   onPerson: (p: Person) => void;
   wide: boolean;
 }) {
@@ -69,7 +75,7 @@ function PersonCard({
           </div>
         </div>
         <div style={{ textAlign: "right", flex: "0 0 auto" }}>
-          <div className="head" style={{ fontSize: wide ? 30 : 26, lineHeight: 1 }}>{p.points}</div>
+          <div className="head" style={{ fontSize: wide ? 30 : 26, lineHeight: 1 }}>{total}</div>
           <div className="head" style={{ fontSize: 10, opacity: .55 }}>POINTS</div>
         </div>
       </div>
@@ -104,26 +110,48 @@ export function SweepstakePage() {
   const app = useApp();
   const people = app.people;
   const wide = app.wide;
-  const ranked = useMemo(() => [...people].sort((a, b) => b.points - a.points), [people]);
+  const settings = app.settings;
+  const teams = useStore(selectTeams);
+  const results = useStore((s) => s.results);
+  const koLive = useStore((s) => s.koLive);
+  const standings = useMemo(() => computeStandings(results), [results]);
+  const bracket = useMemo(() => buildBracket({ results, teams, koLive }), [results, teams, koLive]);
+  const ctx = { teams, standings, bracket };
+  const isStarted = started(results, settings.kickoff);
+
+  const ranked = useMemo(() => rankPlayers(people, ctx), [people, ctx]);
   const alive = ranked.filter((p) => !isEliminated(p)).length;
+
+  const runnerCode = isStarted ? (rankTeams(Object.keys(teams), ctx)[3] ?? null) : null;
+  const bowCode = bestOfWorst(WORST_TEAMS, ctx, isStarted);
+  const sub = (code: string) => `${ROUND_LABEL[deepestRound(code, bracket)]} · ${teamPoints(code, ctx)} pts`;
 
   return (
     <Fragment>
       <PageTitle sub={`${alive} of ${people.length} still standing`}>SWEEPSTAKE</PageTitle>
 
-      {/* Podium */}
+      {/* Podium — top 3 TEAMS */}
       <div className="sticker" style={{ padding: wide ? "22px 24px 16px" : "18px 14px 12px",
         background: "linear-gradient(180deg,#13204a,#1b2a4a)", border: "4px solid var(--ink)" }}>
         <div className="head" style={{ color: "var(--sun)", fontSize: 15, letterSpacing: "1px",
           textAlign: "center", marginBottom: 14 }}>🏆 TOP OF THE TABLE 🏆</div>
-        <Podium people={people} onPerson={app.openPerson} />
+        <Podium ctx={ctx} started={isStarted} />
       </div>
 
-      {/* Cards */}
+      {/* Runner-up + Best of the Worst */}
+      <div style={{ display: "grid", gap: 14, gridTemplateColumns: wide ? "1fr 1fr" : "1fr", marginTop: 4 }}>
+        <TeamSpotlight title="🥈 RUNNER-UP (4TH)" accent="#d7dde6" code={runnerCode}
+          subtitle={runnerCode ? sub(runnerCode) : undefined} />
+        <TeamSpotlight title="🐐 BEST OF THE WORST" accent="var(--mint)" code={bowCode}
+          subtitle={bowCode ? sub(bowCode) : undefined} />
+      </div>
+
+      {/* Cards — players ranked by their teams' combined points */}
       <div style={{ display: "grid", gap: 14,
         gridTemplateColumns: wide ? "1fr 1fr" : "1fr", marginTop: 4 }}>
         {ranked.map((p, i) => (
-          <PersonCard key={p.id} p={p} rank={i + 1} onPerson={app.openPerson} wide={wide} />
+          <PersonCard key={p.id} p={p} rank={i + 1} total={playerTotal(p, ctx)}
+            onPerson={app.openPerson} wide={wide} />
         ))}
       </div>
 

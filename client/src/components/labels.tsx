@@ -43,6 +43,19 @@ export const TIER_COLOUR: Record<string, string> = {
   'Longshot': 'var(--pink)',
 };
 
+/* Sweepstake-pot marker: a gold ⭐ on "best" teams, an UNDERDOG badge on "worst". */
+export function DrawTier({ code }: { code: string }) {
+  const teams = useStore(selectTeams);
+  const worst = teams[code]?.worst;
+  return (
+    <span className="head pill" title={worst ? 'A "worst-pot" underdog' : 'A "best-pot" team'}
+      style={{ background: worst ? 'var(--tomato)' : 'var(--sun)', color: worst ? '#fff' : 'var(--ink)',
+        fontSize: 10, letterSpacing: '.5px', padding: '5px 9px', borderRadius: 999,
+        border: '2.5px solid var(--ink)', boxShadow: '1.5px 2px 0 rgba(27,42,74,.7)' }}>
+      {worst ? '🐶 UNDERDOG' : '⭐ BEST'}</span>
+  );
+}
+
 export function TierBadge({ tier, small }: { tier: string; small?: boolean }) {
   return (
     <span className="head" style={{ display: 'inline-flex', alignItems: 'center',

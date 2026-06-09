@@ -263,3 +263,31 @@ export function buildBracket(state: BracketState): Bracket {
 export function bracketFull(teams: Record<string, Team> = TEAMS): Bracket {
   return buildBracket({ results: {}, teams });
 }
+
+/* Count a team's ACTUAL knockout wins — only ties that were played (from the
+   live feed). Projected ties (no `played`) don't count, so points/progression
+   only ever reflect real results. */
+export function koWins(code: string, b: Bracket): number {
+  let n = 0;
+  for (const t of [...b.r32, ...b.r16, ...b.qf, ...b.sf, b.final]) if (t.w === code && t.played) n++;
+  return n;
+}
+
+/* How far a team ACTUALLY got: 0 = didn't qualify, 1 = reached R32, then +1 per
+   knockout win up to 6 = Champion. Based on real results, not the projection. */
+export function deepestRound(code: string, b: Bracket): number {
+  if (!code) return 0;
+  const qualified = b.r32.some((t) => t.a === code || t.b === code);
+  if (!qualified) return 0;
+  return Math.min(6, 1 + koWins(code, b));
+}
+
+export const ROUND_LABEL: Record<number, string> = {
+  0: 'Group stage',
+  1: 'Round of 32',
+  2: 'Round of 16',
+  3: 'Quarter-final',
+  4: 'Semi-final',
+  5: 'Final',
+  6: 'Champion! 🏆',
+};

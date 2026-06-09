@@ -147,7 +147,7 @@ describe('store actions', () => {
     expect(s.getState().bracketNonce).toBe(0);
     expect(s.getState().teamEdits).toEqual({});
     expect(s.getState().results).toEqual({});
-    expect(s.getState().people).toHaveLength(6);
+    expect(s.getState().people).toHaveLength(24);
     expect(s.getState().settings.activeProvider).toBe('api-football');
     expect(s.getState().settings.dataSource).toBe('demo');
   });

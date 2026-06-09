@@ -11,7 +11,12 @@ import { Avatar } from '../components/avatar';
 import { Ticker } from '../components/ticker';
 import { NextUpCard } from '../components/next-up-card';
 import { Jumbotron } from '../components/jumbotron';
-import { TICKER, NEXTUP, type Person, type NextUpItem } from '../data/teams';
+import { TeamSpotlight } from '../components/team-spotlight';
+import { useStore, selectTeams } from '../store/store';
+import { computeStandings } from '../data/tournament';
+import { buildBracket, deepestRound, ROUND_LABEL } from '../lib/bracket';
+import { bestOfWorst, teamPoints, started } from '../lib/scoring';
+import { TICKER, NEXTUP, WORST_TEAMS, type Person, type NextUpItem } from '../data/teams';
 
 /* ---------- Live leaders board (tap to expand top-3 ↔ full ranked table) ---------- */
 function HomeLeaders({
@@ -98,6 +103,20 @@ export function HomePage() {
   const reminders = app.reminders;
   const [poke, setPoke] = useState(0);
 
+  // "Best of the Worst": the worst-pot team furthest in the competition
+  const teams = useStore(selectTeams);
+  const results = useStore((s) => s.results);
+  const koLive = useStore((s) => s.koLive);
+  const standings = useMemo(() => computeStandings(results), [results]);
+  const bracket = useMemo(() => buildBracket({ results, teams, koLive }), [results, teams, koLive]);
+  const ctx = { teams, standings, bracket };
+  const isStarted = started(results, settings.kickoff);
+  const bowCode = bestOfWorst(WORST_TEAMS, ctx, isStarted);
+  const BestWorst = (
+    <TeamSpotlight title="🐐 BEST OF THE WORST" accent="var(--mint)" code={bowCode}
+      subtitle={bowCode ? `${ROUND_LABEL[deepestRound(bowCode, bracket)]} · ${teamPoints(bowCode, ctx)} pts` : undefined} />
+  );
+
   const onReminder = (m: NextUpItem) => {
     const id = `${m.a}-${m.b}`;
     const has = app.reminders.has(id);
@@ -146,6 +165,7 @@ export function HomePage() {
           onOpenSweepstake={() => app.go('Sweepstake')} wide={false} />
         {NextUpHeading}
         {NextUp}
+        {BestWorst}
       </>
     );
   }
@@ -157,6 +177,7 @@ export function HomePage() {
         <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
           <HomeLeaders people={people} onPerson={app.openPerson}
             onOpenSweepstake={() => app.go('Sweepstake')} wide />
+          {BestWorst}
         </div>
         <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
           {NextUpHeading}
