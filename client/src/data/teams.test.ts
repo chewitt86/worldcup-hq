@@ -18,17 +18,38 @@ describe('teams data', () => {
   });
 });
 
-describe('people/ticker/next-up/kickoff', () => {
-  test('PEOPLE has 6 entries', () => {
-    expect(PEOPLE).toHaveLength(6);
+describe('the family draw', () => {
+  test('24 players, each drawing 2 teams', () => {
+    expect(PEOPLE).toHaveLength(24);
+    for (const p of PEOPLE) expect(p.teams).toHaveLength(2);
   });
 
-  test('Leo backs BRA, NED, JPN with JPN out', () => {
+  test('covers all 48 teams exactly once', () => {
+    const drawn = PEOPLE.flatMap((p) => p.teams);
+    expect(drawn).toHaveLength(48);
+    expect(new Set(drawn).size).toBe(48);
+    expect(new Set(drawn)).toEqual(new Set(Object.keys(TEAMS)));
+  });
+
+  test('every drawn code is a real team and best is one of the pair', () => {
+    for (const p of PEOPLE) {
+      for (const code of p.teams) expect(TEAMS[code], `${p.name} → ${code}`).toBeDefined();
+      expect(p.teams).toContain(p.best);
+    }
+  });
+
+  test('player ids are unique', () => {
+    const ids = PEOPLE.map((p) => p.id);
+    expect(new Set(ids).size).toBe(ids.length);
+  });
+
+  test('Leo drew Canada + Türkiye', () => {
     const leo = PEOPLE.find((p) => p.id === 'leo')!;
-    expect(leo.teams).toEqual(['BRA', 'NED', 'JPN']);
-    expect(leo.out).toContain('JPN');
+    expect(leo.teams).toEqual(['CAN', 'TUR']);
   });
+});
 
+describe('ticker/next-up/kickoff', () => {
   test('KICKOFF equals the opening-match timestamp', () => {
     expect(KICKOFF).toBe(new Date('2026-06-11T20:00:00').getTime());
   });

@@ -95,6 +95,9 @@ export interface StoreState extends AppState {
   /* clean slate for the real draw: clear all scores + eliminations + points,
      keeping the people so they can be renamed/re-drawn. */
   prepareForKickoff: () => void;
+  /* replace the players with the official baked-in family draw (just the people;
+     settings, scores and API config are left untouched). */
+  loadDraw: () => void;
 }
 
 /* Strip a provider patch of anything key-shaped so a raw key can never be
@@ -279,6 +282,11 @@ export function createStore(): StoreApi<StoreState> {
         koLive: fresh.koLive ?? null,
         fixtures: fresh.fixtures ?? [],
       });
+    },
+
+    loadDraw() {
+      // only the players — leave settings / results / API config alone
+      set({ people: clone(DEFAULTS).people });
     },
   }));
 }

@@ -208,14 +208,33 @@ function buildTeams(): Record<string, Team> {
 
 export const TEAMS: Record<string, Team> = buildTeams();
 
-/* ---- Sweepstake players (the family). points = fun score so far. ---- */
+/* ---- Sweepstake players — the real family draw (24 players × 2 teams = all 48).
+   points start at 0; the stronger of each pair is listed first as `best`. ---- */
 export const PEOPLE: Person[] = [
-  { id: 'leo', name: 'Leo', initials: 'LE', colour: '#36a9ff', points: 38, teams: ['BRA', 'NED', 'JPN'], out: ['JPN'], best: 'BRA' },
-  { id: 'gp', name: 'Grandad', initials: 'GP', colour: '#9b6cf0', points: 34, teams: ['FRA', 'MAR', 'GHA'], out: ['GHA'], best: 'FRA' },
-  { id: 'mum', name: 'Mum', initials: 'MU', colour: '#ff8fd0', points: 31, teams: ['ARG', 'USA', 'SEN'], out: [], best: 'ARG' },
-  { id: 'dad', name: 'Dad', initials: 'DA', colour: '#ff9f1c', points: 27, teams: ['ESP', 'CRO', 'CAN'], out: ['CAN'], best: 'ESP' },
-  { id: 'sam', name: 'Auntie Sam', initials: 'SA', colour: '#2fe0c0', points: 22, teams: ['ENG', 'MEX'], out: [], best: 'ENG' },
-  { id: 'rob', name: 'Uncle Rob', initials: 'RO', colour: '#ff5d5d', points: 12, teams: ['GER', 'POR'], out: ['GER', 'POR'], best: 'POR' },
+  { id: 'auntie-carly', name: 'Auntie Carly', initials: 'AC', colour: '#36a9ff', points: 0, teams: ['NED', 'KSA'], out: [], best: 'NED' },
+  { id: 'auntie-marie', name: 'Auntie Marie', initials: 'AM', colour: '#ff5d5d', points: 0, teams: ['USA', 'UZB'], out: [], best: 'USA' },
+  { id: 'caley', name: 'Caley', initials: 'CA', colour: '#46b94a', points: 0, teams: ['ENG', 'CPV'], out: [], best: 'ENG' },
+  { id: 'charlie', name: 'Charlie', initials: 'CH', colour: '#9b6cf0', points: 0, teams: ['AUT', 'GHA'], out: [], best: 'AUT' },
+  { id: 'chloe', name: 'Chloe', initials: 'CL', colour: '#ff9f1c', points: 0, teams: ['IRN', 'SCO'], out: [], best: 'IRN' },
+  { id: 'connor', name: 'Connor', initials: 'CO', colour: '#2fe0c0', points: 0, teams: ['KOR', 'BIH'], out: [], best: 'KOR' },
+  { id: 'david', name: 'David', initials: 'DA', colour: '#ff8fd0', points: 0, teams: ['URU', 'ALG'], out: [], best: 'URU' },
+  { id: 'gary', name: 'Gary', initials: 'GA', colour: '#ffd23f', points: 0, teams: ['SUI', 'CZE'], out: [], best: 'SUI' },
+  { id: 'grandad', name: 'Grandad', initials: 'GD', colour: '#8ad6ff', points: 0, teams: ['BEL', 'PAR'], out: [], best: 'BEL' },
+  { id: 'grandma', name: 'Grandma', initials: 'GM', colour: '#f0653f', points: 0, teams: ['FRA', 'TUN'], out: [], best: 'FRA' },
+  { id: 'jamie', name: 'Jamie', initials: 'JA', colour: '#7e57c2', points: 0, teams: ['ECU', 'NZL'], out: [], best: 'ECU' },
+  { id: 'jodie', name: 'Jodie', initials: 'JO', colour: '#26c6da', points: 0, teams: ['CRO', 'EGY'], out: [], best: 'CRO' },
+  { id: 'leah', name: 'Leah', initials: 'LH', colour: '#ff9f1c', points: 0, teams: ['JPN', 'COD'], out: [], best: 'JPN' },
+  { id: 'leo', name: 'Leo', initials: 'LE', colour: '#36a9ff', points: 0, teams: ['CAN', 'TUR'], out: [], best: 'CAN' },
+  { id: 'lou', name: 'Lou', initials: 'LO', colour: '#46b94a', points: 0, teams: ['AUS', 'CUW'], out: [], best: 'AUS' },
+  { id: 'michelle', name: 'Michelle', initials: 'MI', colour: '#9b6cf0', points: 0, teams: ['MEX', 'RSA'], out: [], best: 'MEX' },
+  { id: 'nana', name: 'Nana', initials: 'NA', colour: '#ff5d5d', points: 0, teams: ['POR', 'SWE'], out: [], best: 'POR' },
+  { id: 'nanny-sonia', name: 'Nanny Sonia', initials: 'NS', colour: '#2fe0c0', points: 0, teams: ['SEN', 'IRQ'], out: [], best: 'SEN' },
+  { id: 'poppy', name: 'Poppy', initials: 'PO', colour: '#ff8fd0', points: 0, teams: ['ESP', 'PAN'], out: [], best: 'ESP' },
+  { id: 'silly-grandad', name: 'Silly Grandad', initials: 'SG', colour: '#ffd23f', points: 0, teams: ['BRA', 'NOR'], out: [], best: 'BRA' },
+  { id: 'uncle-james', name: 'Uncle James', initials: 'UJ', colour: '#8ad6ff', points: 0, teams: ['COL', 'CIV'], out: [], best: 'COL' },
+  { id: 'uncle-lee', name: 'Uncle Lee', initials: 'UL', colour: '#f0653f', points: 0, teams: ['MAR', 'HAI'], out: [], best: 'MAR' },
+  { id: 'uncle-matt', name: 'Uncle Matt', initials: 'UM', colour: '#7e57c2', points: 0, teams: ['ARG', 'QAT'], out: [], best: 'ARG' },
+  { id: 'uncle-rich', name: 'Uncle Rich', initials: 'UR', colour: '#26c6da', points: 0, teams: ['GER', 'JOR'], out: [], best: 'GER' },
 ];
 
 /* ---- Match ticker — mix of warm-up results and upcoming kick-offs. ---- */

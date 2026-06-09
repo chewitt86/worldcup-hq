@@ -346,10 +346,13 @@ function AdminDashboard({ token, onLogout }: { token: string; onLogout: () => vo
           {/* DANGER */}
           <AdminCard icon="⚠️" title="Danger zone" accent="var(--tomato)">
             <div style={{ fontSize: 12.5, fontWeight: 700, opacity: .7, marginBottom: 10 }}>
-              <b>Prepare for kickoff</b> clears every score and resets each player to "all
-              in, nil points" — keeping your players so you can rename them and assign their
-              real drawn teams. <b>Reset everything</b> restores the demo defaults. Neither
-              can be undone!</div>
+              <b>Load the official draw</b> replaces the players with the real family draw
+              (24 players, all 48 teams), leaving scores and settings alone.
+              <b> Prepare for kickoff</b> clears every score and sets all players to "all in,
+              nil points". <b>Reset everything</b> restores the baked-in defaults (the official
+              draw + default settings). None can be undone!</div>
+            <button onClick={() => { if (confirm('Replace the players with the official family draw (24 players · all 48 teams)?')) { store.getState().loadDraw(); app.ping('📋 Official draw loaded!'); } }}
+              style={{ ...btn('var(--blue)', '#fff'), marginBottom: 10 }}>📋 Load the official draw</button>
             <button onClick={() => { if (confirm('Clear all scores and eliminations, ready for the real draw?')) { store.getState().prepareForKickoff(); app.ping('🚀 Cleared — ready for kickoff!'); } }}
               style={{ ...btn('var(--grass)', 'var(--ink)'), marginBottom: 10 }}>🚀 Prepare for kickoff</button>
             <button onClick={() => { if (confirm('Reset everything to defaults?')) { store.getState().reset(); app.ping('♻️ Reset to defaults'); } }}
