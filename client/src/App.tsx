@@ -16,7 +16,6 @@ import { Toast } from './components/toast';
 import { PersonPopup } from './components/person-popup';
 import { TopNav } from './components/top-nav';
 import { Wobbles, type WobblesMood } from './components/mascot';
-import { KeepyUppy } from './components/keepy-uppy';
 import type { Person } from './data/teams';
 import { HomePage } from './pages/home';
 import { SchedulePage } from './pages/schedule';
@@ -49,13 +48,10 @@ const REACTIONS: Reaction[] = [
   { anim: 'anim-spin360', mood: 'love', fx: 'goal' },
 ];
 
-const SECRET_CHANCE = 0.12; // chance a poke reveals the hidden keepy-uppy game
-
-function Mascot({ burst, goalCelebrate, onSecret, alwaysGame, wide }:
-  { burst: () => void; goalCelebrate: () => void; onSecret: () => void; alwaysGame: boolean; wide: boolean }) {
+function Mascot({ burst, goalCelebrate, wide }:
+  { burst: () => void; goalCelebrate: () => void; wide: boolean }) {
   const [react, setReact] = useState<Reaction | null>(null);
   const [bubble, setBubble] = useState<string | null>(null);
-  const [secret, setSecret] = useState(false);
   const lastR = useRef(-1);
   const lastC = useRef(-1);
   const bubbleTimer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
@@ -73,34 +69,20 @@ function Mascot({ burst, goalCelebrate, onSecret, alwaysGame, wide }:
     const r = REACTIONS[pick(REACTIONS.length, lastR)];
     setReact(null);
     requestAnimationFrame(() => setReact(r));
+    setBubble(CHEERS[pick(CHEERS.length, lastC)]);
+    if (r.fx === 'goal') goalCelebrate();
+    else if (r.fx === 'confetti') burst();
     clearTimeout(bubbleTimer.current);
-    if (alwaysGame || Math.random() < SECRET_CHANCE) {
-      // the secret: tap the bubble to drop into the keepy-uppy game
-      setSecret(true);
-      setBubble('Keepy uppies?! 👀');
-      burst();
-      bubbleTimer.current = setTimeout(() => { setBubble(null); setSecret(false); }, 2600);
-    } else {
-      setSecret(false);
-      setBubble(CHEERS[pick(CHEERS.length, lastC)]);
-      if (r.fx === 'goal') goalCelebrate();
-      else if (r.fx === 'confetti') burst();
-      bubbleTimer.current = setTimeout(() => setBubble(null), 1600);
-    }
+    bubbleTimer.current = setTimeout(() => setBubble(null), 1600);
   };
   return (
     <div style={{ position: 'absolute', right: wide ? 26 : 12, bottom: wide ? 22 : 12, zIndex: 55,
       display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: 4 }}>
       {bubble && (
-        <div className={secret ? 'tap' : undefined}
-          onClick={secret ? () => { clearTimeout(bubbleTimer.current); setBubble(null); setSecret(false); onSecret(); } : undefined}
-          style={{ position: 'relative', fontFamily: 'var(--head)', fontSize: wide ? 17 : 14,
-          color: 'var(--ink)', background: secret ? 'var(--sun)' : 'var(--cream)',
-          border: '3px solid var(--ink)', borderRadius: 16, cursor: secret ? 'pointer' : 'default',
+        <div style={{ position: 'relative', fontFamily: 'var(--head)', fontSize: wide ? 17 : 14,
+          color: 'var(--ink)', background: 'var(--cream)', border: '3px solid var(--ink)', borderRadius: 16,
           padding: '7px 13px', boxShadow: '3px 4px 0 rgba(27,42,74,.7)', whiteSpace: 'nowrap', marginRight: 6,
-          transformOrigin: 'bottom right', animation: secret
-            ? 'wchq-bubblepop .32s cubic-bezier(.3,.7,.3,1.4), wchq-secretpulse 1.1s ease-in-out .4s infinite'
-            : 'wchq-bubblepop .32s cubic-bezier(.3,.7,.3,1.4)' }}>
+          transformOrigin: 'bottom right', animation: 'wchq-bubblepop .32s cubic-bezier(.3,.7,.3,1.4)' }}>
           {bubble}
           <span style={{ position: 'absolute', right: 18, bottom: -11, width: 0, height: 0,
             borderLeft: '9px solid transparent', borderRight: '9px solid transparent',
@@ -152,7 +134,6 @@ function App() {
   const [goal, setGoal] = useState(false);
   const [teamCode, setTeamCode] = useState<string | null>(null);
   const [mapFocus, setMapFocus] = useState<string | null>(null);
-  const [game, setGame] = useState(false);
   const [adminAuthed, setAdminAuthed] = useState(false);
   const [reminders, toggleReminder] = useReminders();
   const scroller = useRef<HTMLDivElement>(null);
@@ -227,8 +208,7 @@ function App() {
           </div>
         </div>
 
-        <Mascot burst={burst} goalCelebrate={goalCelebrate} onSecret={() => setGame(true)} alwaysGame={!!settings.alwaysGame} wide={wide} />
-        {game && <KeepyUppy onClose={() => setGame(false)} wide={wide} />}
+        <Mascot burst={burst} goalCelebrate={goalCelebrate} wide={wide} />
         <Toast msg={toast ?? undefined} />
         <PersonPopup person={person} onClose={() => setPerson(null)} />
         <TeamPopup code={teamCode} onClose={() => setTeamCode(null)} onPerson={openPerson} />

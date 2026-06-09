@@ -333,19 +333,6 @@ function AdminDashboard({ token, onLogout }: { token: string; onLogout: () => vo
                 })()}
                 onChange={(e) => store.getState().setSettings({ kickoff: new Date(e.target.value).getTime() })}
                 style={inputStyle} /></Field>
-            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 10, marginTop: 4 }}>
-              <div>
-                <div className="head" style={{ fontSize: 12.5 }}>🎮 Always show the keepy-uppy game</div>
-                <div style={{ fontSize: 11, fontWeight: 600, opacity: .6, marginTop: 2 }}>
-                  When on, poking Wobbles always opens the secret game (otherwise it's a rare surprise).</div>
-              </div>
-              <div className="tap" onClick={() => store.getState().setSettings({ alwaysGame: !settings.alwaysGame })}
-                style={{ flex: '0 0 auto', width: 56, height: 30, borderRadius: 999, border: '3px solid var(--ink)',
-                  background: settings.alwaysGame ? 'var(--grass)' : '#d9d2c2', position: 'relative', transition: 'background .15s' }}>
-                <div style={{ position: 'absolute', top: 1, left: settings.alwaysGame ? 27 : 1, width: 22, height: 22,
-                  borderRadius: '50%', background: '#fff', border: '2px solid var(--ink)', transition: 'left .15s' }} />
-              </div>
-            </div>
           </AdminCard>
 
           {/* DATA / API */}

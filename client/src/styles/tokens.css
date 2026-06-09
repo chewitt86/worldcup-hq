@@ -188,7 +188,6 @@
   100% { transform: scale(1) translateY(0); opacity: 1; }
 }
 @keyframes wchq-fade { from { opacity: 0; } to { opacity: 1; } }
-@keyframes wchq-secretpulse { 0%, 100% { transform: scale(1); } 50% { transform: scale(1.06); } }
 
 /* extra one-shot "poke" reactions for the mascot (picked at random) */
 @keyframes wchq-spin360 {
