@@ -17,6 +17,7 @@ import {
 import { Flag } from '../components/flag';
 import { Avatar } from '../components/avatar';
 import { PageTitle, TierBadge, OddsPill, Backers } from '../components/labels';
+import { ModalOverlay } from '../components/modal';
 
 function TeamCard({
   code,
@@ -89,10 +90,8 @@ function TeamPopup({
     .map(({ fx, r }) => ({ a: fx.a, b: fx.b, as: r!.score[0], bs: r!.score[1] }));
 
   return (
-    <div onClick={onClose} style={{ position: "absolute", inset: 0, zIndex: 80,
-      background: "rgba(27,42,74,.5)", display: "flex", alignItems: "center",
-      justifyContent: "center", padding: 18, backdropFilter: "blur(2px)" }}>
-      <div onClick={(e) => e.stopPropagation()} className="sticker noscroll"
+    <ModalOverlay onClose={onClose}>
+      <div className="sticker noscroll"
         style={{ width: "100%", maxWidth: 360, padding: 0, overflow: "hidden",
           maxHeight: "88%", overflowY: "auto", animation: "wchq-pop .32s ease-out" }}>
         {/* header */}
@@ -190,7 +189,7 @@ function TeamPopup({
           )}
         </div>
       </div>
-    </div>
+    </ModalOverlay>
   );
 }
 

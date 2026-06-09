@@ -7,6 +7,7 @@ import type { Person } from '../data/teams';
 import { TEAMS } from '../data/teams';
 import { Avatar } from './avatar';
 import { Flag, FlagChip } from './flag';
+import { ModalOverlay } from './modal';
 
 /* ---------- Person detail popup ---------- */
 export function PersonPopup({ person, onClose }: { person?: Person | null; onClose?: () => void }) {
@@ -14,10 +15,8 @@ export function PersonPopup({ person, onClose }: { person?: Person | null; onClo
   const T = TEAMS;
   const stillIn = person.teams.filter((c) => !person.out.includes(c));
   return (
-    <div onClick={onClose} style={{ position: "absolute", inset: 0, zIndex: 80,
-      background: "rgba(27,42,74,.45)", display: "flex", alignItems: "center",
-      justifyContent: "center", padding: 18, backdropFilter: "blur(2px)" }}>
-      <div onClick={(e) => e.stopPropagation()} className="sticker"
+    <ModalOverlay onClose={() => onClose?.()}>
+      <div className="sticker"
         style={{ width: "100%", maxWidth: 320, padding: 20, animation: "wchq-pop .32s ease-out" }}>
         <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
           <Avatar person={person} size={56} />
@@ -53,6 +52,6 @@ export function PersonPopup({ person, onClose }: { person?: Person | null; onClo
           <span style={{ marginLeft: "auto", fontFamily: "var(--head)", fontSize: 13, color: "var(--tomato)" }}>{T[person.best]?.odds}</span>
         </div>
       </div>
-    </div>
+    </ModalOverlay>
   );
 }

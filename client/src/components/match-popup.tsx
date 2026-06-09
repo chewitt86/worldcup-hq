@@ -3,6 +3,7 @@
 
 import { Flag } from './flag';
 import { Avatar } from './avatar';
+import { ModalOverlay } from './modal';
 import { ELIMINATED, backers } from '../data/tournament';
 import { TEAMS, type Person } from '../data/teams';
 
@@ -110,22 +111,8 @@ function MatchPopup({
   };
 
   return (
-    <div
-      onClick={onClose}
-      style={{
-        position: 'absolute',
-        inset: 0,
-        zIndex: 80,
-        background: 'rgba(27,42,74,.5)',
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'center',
-        padding: 18,
-        backdropFilter: 'blur(2px)',
-      }}
-    >
+    <ModalOverlay onClose={() => onClose?.()}>
       <div
-        onClick={(e) => e.stopPropagation()}
         className="sticker"
         style={{ width: '100%', maxWidth: 340, padding: 18 }}
       >
@@ -225,7 +212,7 @@ function MatchPopup({
           </div>
         )}
       </div>
-    </div>
+    </ModalOverlay>
   );
 }
 

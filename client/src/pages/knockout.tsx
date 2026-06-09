@@ -15,6 +15,7 @@ import { koGame, type KoStage, type ResultsMap } from '../data/map';
 import { Flag } from '../components/flag';
 import { Avatar } from '../components/avatar';
 import { PageTitle } from '../components/labels';
+import { ModalOverlay } from '../components/modal';
 import { PanZoom, type PanZoomHandle } from '../components/panzoom';
 import { TeamPopup } from './teams';
 
@@ -238,9 +239,8 @@ function GameModal({
   };
 
   return (
-    <div onClick={onClose} style={{ position: "absolute", inset: 0, zIndex: 80, background: "rgba(27,42,74,.5)",
-      display: "flex", alignItems: "center", justifyContent: "center", padding: 18, backdropFilter: "blur(2px)" }}>
-      <div onClick={(e) => e.stopPropagation()} className="sticker"
+    <ModalOverlay onClose={onClose}>
+      <div className="sticker"
         style={{ width: "100%", maxWidth: 340, padding: 18 }}>
         <div style={{ display: "flex", alignItems: "center", marginBottom: 14 }}>
           <span className="head pill" style={{ background: "var(--grape)", color: "#fff", fontSize: 13,
@@ -281,7 +281,7 @@ function GameModal({
           </div>
         )}
       </div>
-    </div>
+    </ModalOverlay>
   );
 }
 
