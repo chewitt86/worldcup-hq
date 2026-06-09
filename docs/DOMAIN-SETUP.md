@@ -25,17 +25,23 @@ behind CGNAT. Your app already has a `cloudflared` service stubbed in `docker-co
    `--token` in the example command). That's all you need from here.
 
 ### 3. Run the connector on Unraid
-1. Edit `docker-compose.yml`, uncomment the `cloudflared` service at the bottom, and paste
-   your token:
-   ```yaml
-   cloudflared:
-     image: cloudflare/cloudflared:latest
-     container_name: cloudflared
-     restart: unless-stopped
-     command: tunnel --no-autoupdate run --token eyJ...your-token...
-   ```
-2. **Compose Up** again (Docker Compose Manager → the stack → Compose Up). The tunnel
-   connector starts and shows as **Healthy/Connected** back in the Cloudflare Tunnels page.
+The `cloudflared` service is already in `docker-compose.yml` behind a `tunnel` profile, so you
+**don't edit any tracked file** (the token lives in your git-ignored `.env`, safe from
+`git pull`). In the Unraid terminal:
+```bash
+cd /mnt/user/appdata/worldcup-hq
+nano .env          # add the two lines below, then Ctrl+O Enter, Ctrl+X
+```
+Add (paste your real token):
+```ini
+CLOUDFLARE_TUNNEL_TOKEN=eyJ...your-token...
+COMPOSE_PROFILES=tunnel
+```
+Then bring it up (this also starts the cloudflared container):
+```bash
+./manage.sh deploy
+```
+The tunnel shows as **Healthy/Connected** back on the Cloudflare Tunnels page.
 
 ### 4. Point the hostname at the app
 1. Back in the tunnel → **Public Hostname** tab → **Add a public hostname**:

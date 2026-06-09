@@ -16,13 +16,15 @@ services:
 
   # ==========================================================================
   # OPTIONAL — expose the site on your own domain via Cloudflare Tunnel
-  # (no router port-forwarding, free HTTPS):
-  #   1) Cloudflare dashboard -> Zero Trust -> Networks -> Tunnels -> Create
-  #      -> Cloudflared -> copy the TOKEN
-  #   2) Uncomment below, paste the token, Compose Up again
-  #   3) In the tunnel's "Public Hostname" tab: Service HTTP -> worldcup-hq:3050
-  # cloudflared:
-  #   image: cloudflare/cloudflared:latest
-  #   container_name: cloudflared
-  #   restart: unless-stopped
-  #   command: tunnel --no-autoupdate run --token PASTE_YOUR_TUNNEL_TOKEN
+  # (no router port-forwarding, free HTTPS, no token in this tracked file).
+  # To enable, put these in your git-ignored .env:
+  #     CLOUDFLARE_TUNNEL_TOKEN=<token from Cloudflare Zero Trust → Tunnels>
+  #     COMPOSE_PROFILES=tunnel
+  # then `./manage.sh deploy`. In the tunnel's "Public Hostname" tab point your
+  # domain at  Service: HTTP  →  URL: worldcup-hq:3050  (same compose network).
+  cloudflared:
+    image: cloudflare/cloudflared:latest
+    container_name: cloudflared
+    restart: unless-stopped
+    profiles: ["tunnel"]
+    command: tunnel --no-autoupdate run --token ${CLOUDFLARE_TUNNEL_TOKEN:-}
