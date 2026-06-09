@@ -192,11 +192,14 @@ export function buildBracket(state: BracketState): Bracket {
     r32pairs.push([seeds[order[i] - 1], seeds[order[i + 1] - 1]]);
   }
 
-  /* A round's koLive array, but only when it reports its FULL expected count;
-     a partially-drawn round is treated as not-yet-available. */
+  /* A round's koLive array, but only when it reports its FULL expected count
+     AND every tie has both teams decided. A round that the feed lists before
+     the draw (teams still "TBD" → empty codes) is treated as not-yet-available,
+     so the odds projection — with real seeded teams — is kept instead. */
   const liveRound = (stage: Stage): KoTie[] | null => {
     const arr = koLive ? koLive[stage] : null;
-    return arr && arr.length === ROUND_COUNT[stage] ? arr : null;
+    if (!arr || arr.length !== ROUND_COUNT[stage]) return null;
+    return arr.every((t) => t.a && t.b) ? arr : null;
   };
 
   /* Resolve one round: a full koLive round REPLACES the projection (real teams

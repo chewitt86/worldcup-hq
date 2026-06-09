@@ -61,7 +61,7 @@ function MatchPopup({
         <Flag code={code} knocked={dead} style={{ width: 40, height: 28, borderRadius: 5 }} />
         <div style={{ flex: 1, minWidth: 0 }}>
           <div className="head" style={{ fontSize: 17, lineHeight: 1 }}>
-            {TEAMS[code].name}
+            {TEAMS[code]?.name ?? (code || 'TBD')}
           </div>
           <div
             style={{
@@ -221,7 +221,7 @@ function MatchPopup({
               marginTop: 10,
             }}
           >
-            ✨ Projected winner: <span className="head">{TEAMS[m.winner].name}</span>
+            ✨ Projected winner: <span className="head">{TEAMS[m.winner]?.name ?? m.winner}</span>
           </div>
         )}
       </div>

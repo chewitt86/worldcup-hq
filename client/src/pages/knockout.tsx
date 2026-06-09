@@ -116,7 +116,7 @@ function TieCard({
             background: win ? "var(--sun)" : "transparent", borderTop: i ? "1px solid #1b2a4a" : "none", opacity: dead ? 0.5 : 1 }}>
             <Flag code={code} knocked={dead} style={{ width: big ? 30 : 22, height: big ? 21 : 15 }} />
             <span className="head" style={{ fontSize: big ? 16 : 13.5, color: win ? "var(--ink)" : "#d4ddf2" }}>
-              {big ? teams[code].name : code}</span>
+              {big ? (teams[code]?.name ?? (code || "TBD")) : (code || "TBD")}</span>
             <span style={{ marginLeft: "auto", display: "flex", alignItems: "center", gap: 6 }}>
               <OwnerIcons code={code} people={people} size={big ? 20 : 15} />
               {played
@@ -223,7 +223,7 @@ function GameModal({
           border: "3px solid var(--ink)", background: win ? "var(--sun)" : "var(--cream)", opacity: dead ? .65 : 1 }}>
         <Flag code={code} knocked={dead} style={{ width: 40, height: 28, borderRadius: 5 }} />
         <div style={{ flex: 1, minWidth: 0 }}>
-          <div className="head" style={{ fontSize: 17, lineHeight: 1 }}>{teams[code].name}</div>
+          <div className="head" style={{ fontSize: 17, lineHeight: 1 }}>{teams[code]?.name ?? (code || "TBD")}</div>
           <div style={{ display: "flex", alignItems: "center", gap: 5, marginTop: 3, flexWrap: "wrap" }}>
             {owners.length ? owners.map((p) => (
               <span key={p.id} style={{ display: "inline-flex", alignItems: "center", gap: 4,
@@ -346,7 +346,7 @@ function Graveyard({
             <div style={{ fontSize: 20, marginBottom: 4 }}>✝️</div>
             <Flag code={c} knocked style={{ width: 30, height: 21, margin: "0 auto 7px" }} />
             <div className="head" style={{ color: "#9fb2d4", fontSize: 13, textDecoration: "line-through" }}>
-              {teams[c].name}</div>
+              {teams[c]?.name ?? c}</div>
             <div style={{ fontSize: 9, fontWeight: 700, color: "#6f84ad", marginTop: 2 }}>R.I.P.</div>
           </div>
         ))}
