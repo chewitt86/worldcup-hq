@@ -15,7 +15,7 @@ import { Confetti } from './components/confetti';
 import { Toast } from './components/toast';
 import { PersonPopup } from './components/person-popup';
 import { TopNav } from './components/top-nav';
-import { Wobbles } from './components/mascot';
+import { Wobbles, type WobblesMood } from './components/mascot';
 import type { Person } from './data/teams';
 import { HomePage } from './pages/home';
 import { SchedulePage } from './pages/schedule';
@@ -28,20 +28,50 @@ import { AdminPage } from './pages/admin';
 
 /* ----- Wobbles, the mascot ----- */
 const CHEERS = ['GOAAAL! ⚽', "Let's gooo!", 'Up the family!', 'Wheee! 🎉',
-  "Who's winning?!", 'Boing! 🏆', "C'mon Leo!", 'Sticker-tastic!'];
+  "Who's winning?!", 'Boing! 🏆', "C'mon Leo!", 'Sticker-tastic!', 'Wobble wobble!',
+  'Top bins! 🥅', 'Back of the net!', 'Nutmeg! 😎', 'To the final! 🏆', 'Yesss! 🙌',
+  'Olé olé! 💃', 'Tekkers! ✨', 'Worldies only!', 'Hat-trick hero!', 'Boooing!', 'Wheee, dizzy! 😵'];
 
-function Mascot({ onCelebrate, wide }: { onCelebrate?: () => void; wide: boolean }) {
-  const [bouncing, setBouncing] = useState(false);
+/* each poke randomly picks one of these: a CSS animation, a Wobbles face, and an
+   effect (a confetti burst, the big GOAL! flash, or nothing extra). */
+type Reaction = { anim: string; mood: WobblesMood; fx: 'goal' | 'confetti' | 'none' };
+const REACTIONS: Reaction[] = [
+  { anim: 'anim-tapbounce', mood: 'cheer', fx: 'confetti' },
+  { anim: 'anim-jump', mood: 'cheer', fx: 'goal' },
+  { anim: 'anim-flip', mood: 'wow', fx: 'goal' },
+  { anim: 'anim-spin360', mood: 'wow', fx: 'confetti' },
+  { anim: 'anim-shake', mood: 'wow', fx: 'none' },
+  { anim: 'anim-wiggle', mood: 'wink', fx: 'none' },
+  { anim: 'anim-tapbounce', mood: 'love', fx: 'confetti' },
+  { anim: 'anim-jump', mood: 'cool', fx: 'confetti' },
+  { anim: 'anim-wiggle', mood: 'cheer', fx: 'none' },
+  { anim: 'anim-spin360', mood: 'love', fx: 'goal' },
+];
+
+function Mascot({ burst, goalCelebrate, wide }:
+  { burst: () => void; goalCelebrate: () => void; wide: boolean }) {
+  const [react, setReact] = useState<Reaction | null>(null);
   const [bubble, setBubble] = useState<string | null>(null);
-  const idx = useRef(0);
+  const lastR = useRef(-1);
+  const lastC = useRef(-1);
   const bubbleTimer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
   const size = wide ? 104 : 76;
+
+  // pick a random index, but never the same one twice in a row
+  const pick = (n: number, prev: { current: number }) => {
+    let i = Math.floor(Math.random() * n);
+    if (n > 1 && i === prev.current) i = (i + 1) % n;
+    prev.current = i;
+    return i;
+  };
+
   const poke = () => {
-    setBouncing(false);
-    requestAnimationFrame(() => setBouncing(true));
-    const msg = CHEERS[idx.current % CHEERS.length]; idx.current++;
-    setBubble(msg);
-    onCelebrate && onCelebrate();
+    const r = REACTIONS[pick(REACTIONS.length, lastR)];
+    setReact(null);
+    requestAnimationFrame(() => setReact(r));
+    setBubble(CHEERS[pick(CHEERS.length, lastC)]);
+    if (r.fx === 'goal') goalCelebrate();
+    else if (r.fx === 'confetti') burst();
     clearTimeout(bubbleTimer.current);
     bubbleTimer.current = setTimeout(() => setBubble(null), 1600);
   };
@@ -59,10 +89,10 @@ function Mascot({ onCelebrate, wide }: { onCelebrate?: () => void; wide: boolean
             borderTop: '12px solid var(--ink)' }} />
         </div>
       )}
-      <div className={'tap ' + (bouncing ? 'anim-tapbounce' : 'anim-bob')} onClick={poke}
-        onAnimationEnd={() => setBouncing(false)} title="Poke Wobbles!"
+      <div className={'tap ' + (react ? react.anim : 'anim-bob')} onClick={poke}
+        onAnimationEnd={() => setReact(null)} title="Poke Wobbles!"
         style={{ filter: 'drop-shadow(3px 4px 0 rgba(27,42,74,.5))' }}>
-        <Wobbles size={size} mood={bouncing ? 'cheer' : 'happy'} />
+        <Wobbles size={size} mood={react ? react.mood : 'happy'} />
       </div>
     </div>
   );
@@ -171,7 +201,7 @@ function App() {
           </div>
         </div>
 
-        <Mascot onCelebrate={goalCelebrate} wide={wide} />
+        <Mascot burst={burst} goalCelebrate={goalCelebrate} wide={wide} />
         <Toast msg={toast ?? undefined} />
         <PersonPopup person={person} onClose={() => setPerson(null)} />
       </div>
