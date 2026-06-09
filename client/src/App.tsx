@@ -20,7 +20,7 @@ import type { Person } from './data/teams';
 import { HomePage } from './pages/home';
 import { SchedulePage } from './pages/schedule';
 import { SweepstakePage } from './pages/sweepstake';
-import { TeamsPage } from './pages/teams';
+import { TeamsPage, TeamPopup } from './pages/teams';
 import { GroupsPage } from './pages/groups';
 import { KnockoutPage } from './pages/knockout';
 import { MapPage } from './pages/map';
@@ -132,6 +132,8 @@ function App() {
   const [person, setPerson] = useState<Person | null>(null);
   const [confetti, setConfetti] = useState(false);
   const [goal, setGoal] = useState(false);
+  const [teamCode, setTeamCode] = useState<string | null>(null);
+  const [mapFocus, setMapFocus] = useState<string | null>(null);
   const [adminAuthed, setAdminAuthed] = useState(false);
   const [reminders, toggleReminder] = useReminders();
   const scroller = useRef<HTMLDivElement>(null);
@@ -159,6 +161,7 @@ function App() {
     if (next !== 'Home') burst();
   };
   const openPerson = (p: Person) => setPerson(p);
+  const openTeam = (code: string) => setTeamCode(code);
 
   // respond to hash changes (browser back/forward + direct #Page links)
   useEffect(() => {
@@ -174,7 +177,8 @@ function App() {
   useEffect(() => { const id = setTimeout(burst, 400); return () => clearTimeout(id); }, []);
 
   const ctx: AppContextValue = {
-    wide, page, go, ping, burst, goalCelebrate, openPerson,
+    wide, page, go, ping, burst, goalCelebrate, openPerson, openTeam,
+    mapFocus, setMapFocus,
     reminders, toggleReminder, adminAuthed, setAdminAuthed,
     settings, people,
   };
@@ -204,6 +208,7 @@ function App() {
         <Mascot burst={burst} goalCelebrate={goalCelebrate} wide={wide} />
         <Toast msg={toast ?? undefined} />
         <PersonPopup person={person} onClose={() => setPerson(null)} />
+        <TeamPopup code={teamCode} onClose={() => setTeamCode(null)} onPerson={openPerson} />
       </div>
     </WCHQContext.Provider>
   );

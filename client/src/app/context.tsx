@@ -15,6 +15,11 @@ export interface AppContextValue {
   burst: () => void;
   goalCelebrate: () => void;
   openPerson: (p: Person) => void;
+  /* open the shared country/team popup (from any page) */
+  openTeam: (code: string) => void;
+  /* a team the Map should zoom to on its next render (set by "View on map") */
+  mapFocus: string | null;
+  setMapFocus: (code: string | null) => void;
   reminders: Set<string>;
   toggleReminder: (id: string) => void;
   adminAuthed: boolean;

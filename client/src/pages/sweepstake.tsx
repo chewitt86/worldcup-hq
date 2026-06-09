@@ -27,6 +27,7 @@ function PersonCard({
   onPerson: (p: Person) => void;
   wide: boolean;
 }) {
+  const { openTeam } = useApp();
   const T = useStore(selectTeams);
   const stillIn = p.teams.filter((c) => !p.out.includes(c));
   const dead = isEliminated(p);
@@ -86,7 +87,9 @@ function PersonCard({
       {/* team flag-chips */}
       <div style={{ display: "flex", flexWrap: "wrap", gap: 7, marginTop: 12, opacity: dead ? .55 : 1 }}>
         {p.teams.map((c) => (
-          <span key={c} className="flagchip" style={{ opacity: p.out.includes(c) ? .55 : 1,
+          <span key={c} className="flagchip tap" title={`${c} — team info`}
+            onClick={(e) => { e.stopPropagation(); openTeam(c); }}
+            style={{ opacity: p.out.includes(c) ? .55 : 1,
             textDecoration: p.out.includes(c) ? "line-through" : "none" }}>
             <Flag code={c} knocked={p.out.includes(c)} />{c}
           </span>

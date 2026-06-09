@@ -48,6 +48,17 @@ export function MapPage() {
   const [popup, setPopup] = useState<string | null>(null);
   const [match, setMatch] = useState<Match | null>(null);
 
+  // "View on map" from a team popup elsewhere → land focused on that team
+  useEffect(() => {
+    if (app.mapFocus) {
+      setShowAll(false);
+      setPersonId(null);
+      setSelected(app.mapFocus);
+      app.setMapFocus(null);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [app.mapFocus]);
+
   const sr = useMemo(() => stageRoutes(stage, results, teams, koLive), [stage, results, teams, koLive]);
   const pool = sr.teams.slice().sort((a, b) => oddsNum(a) - oddsNum(b));
   const person = people.find((p) => p.id === personId);

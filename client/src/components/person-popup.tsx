@@ -8,9 +8,11 @@ import { TEAMS } from '../data/teams';
 import { Avatar } from './avatar';
 import { Flag, FlagChip } from './flag';
 import { ModalOverlay } from './modal';
+import { useApp } from '../app/context';
 
 /* ---------- Person detail popup ---------- */
 export function PersonPopup({ person, onClose }: { person?: Person | null; onClose?: () => void }) {
+  const { openTeam } = useApp();
   if (!person) return null;
   const T = TEAMS;
   const stillIn = person.teams.filter((c) => !person.out.includes(c));
@@ -41,7 +43,10 @@ export function PersonPopup({ person, onClose }: { person?: Person | null; onClo
           </div>
         </div>
         <div style={{ display: "flex", flexWrap: "wrap", gap: 7, marginTop: 12 }}>
-          {person.teams.map((c) => <FlagChip key={c} code={c} knocked={person.out.includes(c)} />)}
+          {person.teams.map((c) => (
+            <FlagChip key={c} code={c} knocked={person.out.includes(c)}
+              onClick={() => { onClose?.(); openTeam(c); }} />
+          ))}
         </div>
         <div style={{ marginTop: 14, display: "flex", alignItems: "center", gap: 8,
           background: "var(--cream2)", border: "3px solid var(--ink)", borderRadius: 14, padding: "8px 12px" }}>

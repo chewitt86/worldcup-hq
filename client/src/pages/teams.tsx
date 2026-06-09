@@ -77,7 +77,7 @@ function TeamPopup({
   const teams = useStore(selectTeams);
   const storeResults = useStore((s) => s.results);
   const standings = useMemo(() => computeStandings(storeResults), [storeResults]);
-  const { people } = useApp();
+  const { people, go, setMapFocus, page } = useApp();
   if (!code) return null;
   const t = teams[code];
   const g = groupOf(code) as string;
@@ -186,6 +186,14 @@ function TeamPopup({
                 boxShadow: "3px 4px 0 rgba(27,42,74,.7)" }}>
               👥 VIEW SQUAD ON FIFA.COM →
             </a>
+          )}
+          {page !== 'Map' && (
+            <div className="head tap" onClick={() => { setMapFocus(code); go('Map'); onClose(); }}
+              style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 8, marginTop: 10,
+                background: "var(--grass)", color: "var(--ink)", fontSize: 14, padding: "11px", borderRadius: 14,
+                border: "3px solid var(--ink)", boxShadow: "3px 4px 0 rgba(27,42,74,.7)" }}>
+              📍 View on the map
+            </div>
           )}
         </div>
       </div>
