@@ -207,10 +207,14 @@ async function pollOnce() {
     const { provider } = activeProviderConfig();
     if (!provider || !provider.key) return;
     const out = await fetcher.fetchLive(provider);
-    if (!out || !out.ok) return;
+    if (!out || !out.ok) { console.log("[sync] feed error:", out && out.reason); return; }
     mergeResultsIntoBoard(out.results, out.koLive, out.fixtures);
+    const fx = out.fixtures ? out.fixtures.length : 0;
+    const ap = out.applied ? out.applied.length : 0;
+    const un = out.unmatched && out.unmatched.length ? " · unmatched: " + out.unmatched.join(", ") : "";
+    console.log(`[sync] ok — ${fx} fixtures, ${ap} group results${un}`);
   } catch (e) {
-    /* swallow — the poller must never crash the server loop */
+    console.log("[sync] poll error:", e && e.message);
   }
 }
 

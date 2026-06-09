@@ -366,6 +366,14 @@ async function apiFootballFetch(provider) {
       ? JSON.stringify(data.errors) : (data.message || "unknown");
     return { ok: false, reason: "API-Football error: " + errs };
   }
+  // API-Football reports plan/rate-limit/parameter problems in `errors` while
+  // STILL returning response:[]. Surface that instead of silently "succeeding"
+  // with zero data (e.g. the free plan excludes the current/future season).
+  const errs = data.errors;
+  const errCount = errs ? (Array.isArray(errs) ? errs.length : Object.keys(errs).length) : 0;
+  if (errCount && data.response.length === 0) {
+    return { ok: false, reason: "API-Football: " + JSON.stringify(errs) };
+  }
   return { ok: true, data };
 }
 
