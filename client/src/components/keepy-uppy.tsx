@@ -13,21 +13,20 @@ import { useEffect, useRef, useState, type CSSProperties } from 'react';
 import { createPortal } from 'react-dom';
 
 /* ---- tunable feel ---- */
-const SIZE = 50;            // ball size (px)
 const GRAVITY = 520;        // px/s²
 const BOUNCE = 640;         // upward kick on tap (px/s)
-const POOL = 16;            // max balls on screen
-const BATCH = 5;            // active at kick-off
-const DRIP_EVERY = 2.2;     // a new ball every N seconds…
+const POOL = 14;            // max balls on screen
+const BATCH = 6;            // active at kick-off
+const DRIP_EVERY = 2.5;     // a new ball every N seconds…
 const ROUND = 60;           // …for a 60-second round
 const GRASS = 64;           // grass strip height (the floor)
 const BEST_KEY = 'wchq.keepy.best';
 
 interface Ball { x: number; y: number; vx: number; vy: number; active: boolean; pop: number; el: HTMLDivElement | null; }
 
-function Football() {
+function Football({ size }: { size: number }) {
   return (
-    <svg width={SIZE} height={SIZE} viewBox="0 0 60 60" style={{ display: 'block',
+    <svg width={size} height={size} viewBox="0 0 60 60" style={{ display: 'block',
       filter: 'drop-shadow(1px 3px 0 rgba(27,42,74,.4))' }}>
       <circle cx="30" cy="30" r="27" fill="#fffdf3" stroke="#1b2a4a" strokeWidth="3" />
       <polygon points="30,17 39,24 35,35 25,35 21,24" fill="#1b2a4a" />
@@ -42,7 +41,8 @@ function readBest(): number {
   try { return parseInt(localStorage.getItem(BEST_KEY) || '0', 10) || 0; } catch { return 0; }
 }
 
-export function KeepyUppy({ onClose }: { onClose: () => void }) {
+export function KeepyUppy({ onClose, wide }: { onClose: () => void; wide: boolean }) {
+  const SIZE = wide ? 64 : 86; // footballs are bigger on mobile (easier to tap)
   const sceneRef = useRef<HTMLDivElement | null>(null);
   const balls = useRef<Ball[]>(
     Array.from({ length: POOL }, (): Ball => ({ x: 0, y: 0, vx: 0, vy: 0, active: false, pop: 0, el: null })),
@@ -110,13 +110,17 @@ export function KeepyUppy({ onClose }: { onClose: () => void }) {
         } else {
           const scene = sceneRef.current;
           const w = scene?.clientWidth ?? 360;
-          const floor = (scene?.clientHeight ?? 640) - GRASS + SIZE * 0.2;
+          const floor = (scene?.clientHeight ?? 640) - GRASS - SIZE * 0.85;
           for (const b of arr) {
             if (!b.active) { if (b.el) b.el.style.display = 'none'; continue; }
             b.vy += GRAVITY * dt; b.x += b.vx * dt; b.y += b.vy * dt;
-            if (b.x < 0) { b.x = 0; b.vx = Math.abs(b.vx) * 0.9; }
-            else if (b.x > w - SIZE) { b.x = w - SIZE; b.vx = -Math.abs(b.vx) * 0.9; }
-            if (b.y > floor) b.active = false;
+            if (b.x < 0) { b.x = 0; b.vx = Math.abs(b.vx) * 0.85; }
+            else if (b.x > w - SIZE) { b.x = w - SIZE; b.vx = -Math.abs(b.vx) * 0.85; }
+            if (b.y >= floor) {                 // bounce off the grass, losing energy, then settle
+              b.y = floor;
+              if (b.vy > 90) { b.vy = -b.vy * 0.55; b.vx *= 0.85; }
+              else { b.vy = 0; b.vx *= 0.78; }
+            }
             if (b.pop > 0) b.pop = Math.max(0, b.pop - dt * 5);
             if (b.el) {
               b.el.style.display = b.active ? 'block' : 'none';
@@ -149,7 +153,7 @@ export function KeepyUppy({ onClose }: { onClose: () => void }) {
   return createPortal(
     <div ref={sceneRef} style={{ position: 'fixed', inset: 0, zIndex: 210, overflow: 'hidden',
       background: 'radial-gradient(120% 80% at 50% 0%, #2a4a86, #0c1838 70%)', touchAction: 'manipulation',
-      userSelect: 'none' }}>
+      userSelect: 'none', WebkitTapHighlightColor: 'transparent' }}>
       <div style={{ position: 'absolute', left: 0, right: 0, bottom: 0, height: GRASS,
         background: 'linear-gradient(180deg,#46b94a,#37953b)', borderTop: '4px solid #1b2a4a' }} />
 
@@ -176,8 +180,9 @@ export function KeepyUppy({ onClose }: { onClose: () => void }) {
         <div key={i} ref={(el) => { const b = balls.current[i]; if (b) b.el = el; }}
           onClick={() => bounceRef.current(i)}
           style={{ position: 'absolute', left: 0, top: 0, width: SIZE, height: SIZE, display: 'none',
-            willChange: 'transform', cursor: 'pointer' }}>
-          <Football />
+            willChange: 'transform', cursor: 'pointer', outline: 'none',
+            WebkitTapHighlightColor: 'transparent', WebkitUserSelect: 'none', userSelect: 'none' }}>
+          <Football size={SIZE} />
         </div>
       ))}
 

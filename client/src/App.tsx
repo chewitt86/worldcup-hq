@@ -228,7 +228,7 @@ function App() {
         </div>
 
         <Mascot burst={burst} goalCelebrate={goalCelebrate} onSecret={() => setGame(true)} wide={wide} />
-        {game && <KeepyUppy onClose={() => setGame(false)} />}
+        {game && <KeepyUppy onClose={() => setGame(false)} wide={wide} />}
         <Toast msg={toast ?? undefined} />
         <PersonPopup person={person} onClose={() => setPerson(null)} />
         <TeamPopup code={teamCode} onClose={() => setTeamCode(null)} onPerson={openPerson} />
