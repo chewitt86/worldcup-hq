@@ -6,7 +6,6 @@
 
 import { useState, useMemo } from 'react';
 import { useApp } from '../app/context';
-import { useCountdown } from '../components/countdown';
 import { Avatar } from '../components/avatar';
 import { Ticker } from '../components/ticker';
 import { NextUpCard } from '../components/next-up-card';
@@ -15,23 +14,27 @@ import { TeamSpotlight } from '../components/team-spotlight';
 import { useStore, selectTeams } from '../store/store';
 import { computeStandings } from '../data/tournament';
 import { buildBracket, deepestRound, ROUND_LABEL } from '../lib/bracket';
-import { bestOfWorst, teamPoints, started } from '../lib/scoring';
+import { bestOfWorst, teamPoints, started, playerTotal, rankPlayers, type ScoreCtx } from '../lib/scoring';
 import { TICKER, NEXTUP, WORST_TEAMS, type Person, type NextUpItem } from '../data/teams';
 
 /* ---------- Live leaders board (tap to expand top-3 ↔ full ranked table) ---------- */
 function HomeLeaders({
   people,
+  ctx,
   onPerson,
   onOpenSweepstake,
   wide,
 }: {
   people: Person[];
+  ctx: ScoreCtx;
   onPerson: (p: Person) => void;
   onOpenSweepstake: () => void;
   wide: boolean;
 }) {
   const [open, setOpen] = useState(false);
-  const ranked = useMemo(() => [...people].sort((a, b) => b.points - a.points), [people]);
+  // Rank + score live from the shared results, so each data sync updates the
+  // board (the static Person.points field is never recomputed — see scoring.ts).
+  const ranked = useMemo(() => rankPlayers(people, ctx), [people, ctx]);
   const top = ranked.slice(0, 3);
   const medals = ['🥇', '🥈', '🥉'];
   return (
@@ -59,7 +62,7 @@ function HomeLeaders({
             <div className={i === 0 ? 'anim-bob' : ''}><Avatar person={p} size={wide ? 48 : 42} /></div>
             <div className="head" style={{ color: '#fff', fontSize: 13 }}>{p.name}</div>
             <div className="head" style={{ color: '#ffd23f', fontSize: 19,
-              textShadow: '0 0 10px rgba(255,210,63,.6)' }}>{p.points}
+              textShadow: '0 0 10px rgba(255,210,63,.6)' }}>{playerTotal(p, ctx)}
               <span style={{ fontSize: 9, color: '#7fa8e6' }}> PTS</span></div>
           </div>
         ))}
@@ -79,7 +82,7 @@ function HomeLeaders({
                   <div style={{ fontSize: 11, fontWeight: 700, color: '#7fa8e6', marginTop: 1 }}>
                     ✅ {stillIn} in · ❌ {p.out.length} out</div>
                 </div>
-                <div className="head" style={{ color: '#ffd23f', fontSize: 17 }}>{p.points}</div>
+                <div className="head" style={{ color: '#ffd23f', fontSize: 17 }}>{playerTotal(p, ctx)}</div>
               </div>
             );
           })}
@@ -97,7 +100,6 @@ function HomeLeaders({
 export function HomePage() {
   const app = useApp();
   const { settings, people } = app;
-  const t = useCountdown(settings.kickoff);
   const wide = app.wide;
   const mobile = !wide;
   const reminders = app.reminders;
@@ -138,7 +140,7 @@ export function HomePage() {
   const jumbo = (
     <div className="tap" title="Tap the big screen!"
       onClick={() => { setPoke((n) => n + 1); app.goalCelebrate(); }}>
-      <Jumbotron key={poke} t={t} big={wide} title={settings.title} />
+      <Jumbotron key={poke} big={wide} title={settings.title} />
     </div>
   );
 
@@ -161,7 +163,7 @@ export function HomePage() {
       <>
         {jumbo}
         {LEDTicker}
-        <HomeLeaders people={people} onPerson={app.openPerson}
+        <HomeLeaders people={people} ctx={ctx} onPerson={app.openPerson}
           onOpenSweepstake={() => app.go('Sweepstake')} wide={false} />
         {NextUpHeading}
         {NextUp}
@@ -175,7 +177,7 @@ export function HomePage() {
       {LEDTicker}
       <div style={{ display: 'grid', gridTemplateColumns: '.9fr 1.1fr', gap: 24, alignItems: 'start' }}>
         <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
-          <HomeLeaders people={people} onPerson={app.openPerson}
+          <HomeLeaders people={people} ctx={ctx} onPerson={app.openPerson}
             onOpenSweepstake={() => app.go('Sweepstake')} wide />
           {BestWorst}
         </div>
