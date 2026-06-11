@@ -262,24 +262,10 @@ export const PEOPLE: Person[] = [
   { id: 'uncle-rich', name: 'Uncle Rich', initials: 'UR', colour: '#26c6da', points: 0, teams: ['GER', 'JOR'], out: [], best: 'GER' },
 ];
 
-/* ---- Match ticker — mix of warm-up results and upcoming kick-offs. ---- */
-export const TICKER: TickerItem[] = [
-  { type: 'result', a: 'BRA', b: 'JPN', as: 3, bs: 1, tag: 'Warm-up' },
-  { type: 'soon', a: 'MEX', b: 'CRO', when: 'Thu 8:00pm', tag: 'Group A' },
-  { type: 'result', a: 'FRA', b: 'CAN', as: 2, bs: 0, tag: 'Warm-up' },
-  { type: 'soon', a: 'ARG', b: 'SEN', when: 'Fri 5:00pm', tag: 'Group C' },
-  { type: 'soon', a: 'ESP', b: 'GHA', when: 'Fri 8:00pm', tag: 'Group H' },
-  { type: 'result', a: 'ENG', b: 'MAR', as: 1, bs: 1, tag: 'Warm-up' },
-  { type: 'soon', a: 'USA', b: 'NED', when: 'Sat 6:00pm', tag: 'Group D' },
-  { type: 'soon', a: 'POR', b: 'GER', when: 'Sat 9:00pm', tag: 'Group F' },
-];
-
-/* ---- Next-up match cards. ---- */
-export const NEXTUP: NextUpItem[] = [
-  { a: 'MEX', b: 'CRO', date: 'Thu 11 Jun', time: '8:00pm', group: 'Group A', venue: 'Estadio Azteca', featured: true },
-  { a: 'ARG', b: 'SEN', date: 'Fri 12 Jun', time: '5:00pm', group: 'Group C', venue: 'MetLife Stadium' },
-  { a: 'USA', b: 'NED', date: 'Sat 13 Jun', time: '6:00pm', group: 'Group D', venue: 'SoFi Stadium' },
-];
+/* The LED ticker and Next Up cards are built live from the shared board's
+   `fixtures` (the real schedule from the feed) — see `lib/fixtures.ts`. The
+   `TickerItem` / `NextUpItem` types above describe the shapes those builders
+   produce. */
 
 /* ---- Kick-off target — opening match of the tournament. ---- */
 export const KICKOFF = new Date('2026-06-11T20:00:00').getTime();

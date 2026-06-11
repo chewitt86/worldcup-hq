@@ -14,6 +14,7 @@ import { useStore, selectTeams } from '../store/store';
 import type { Fixture } from '../store/types';
 import { GROUPS, GROUP_FIXTURES, backers } from '../data/tournament';
 import type { Person, Team } from '../data/teams';
+import { dayLabel, kickTime } from '../lib/fixtures';
 import { Flag } from '../components/flag';
 import { Avatar } from '../components/avatar';
 import { PageTitle } from '../components/labels';
@@ -25,20 +26,6 @@ const LONDON = 'Europe/London';
 function dayKey(ts: number): string {
   return new Date(ts).toLocaleDateString('en-GB', {
     timeZone: LONDON, year: 'numeric', month: '2-digit', day: '2-digit',
-  });
-}
-
-/* human day header, e.g. "Thu 11 Jun". */
-function dayLabel(ts: number): string {
-  return new Date(ts)
-    .toLocaleDateString('en-GB', { timeZone: LONDON, weekday: 'short', day: 'numeric', month: 'short' })
-    .replace(',', '');
-}
-
-/* BST kick-off time, e.g. "20:00". */
-function kickTime(ts: number): string {
-  return new Date(ts).toLocaleTimeString('en-GB', {
-    timeZone: LONDON, hour: '2-digit', minute: '2-digit',
   });
 }
 

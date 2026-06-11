@@ -1,5 +1,5 @@
 import { describe, expect, test } from 'vitest';
-import { TEAMS, PEOPLE, TICKER, NEXTUP, KICKOFF, WORST_TEAMS } from './teams';
+import { TEAMS, PEOPLE, KICKOFF, WORST_TEAMS } from './teams';
 
 describe('best / worst pots + rankings', () => {
   test('exactly 24 worst teams, all real', () => {
@@ -76,10 +76,5 @@ describe('the family draw', () => {
 describe('ticker/next-up/kickoff', () => {
   test('KICKOFF equals the opening-match timestamp', () => {
     expect(KICKOFF).toBe(new Date('2026-06-11T20:00:00').getTime());
-  });
-
-  test('TICKER and NEXTUP ported', () => {
-    expect(TICKER).toHaveLength(8);
-    expect(NEXTUP).toHaveLength(3);
   });
 });

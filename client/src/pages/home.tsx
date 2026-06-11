@@ -4,18 +4,21 @@
    the shared component library; the Jumbotron drives a live countdown off
    settings.kickoff and fires goalCelebrate() when the big screen is tapped. */
 
-import { useState, useMemo } from 'react';
+import { useState, useMemo, type ReactNode } from 'react';
 import { useApp } from '../app/context';
 import { Avatar } from '../components/avatar';
 import { Ticker } from '../components/ticker';
 import { NextUpCard } from '../components/next-up-card';
+import { ResultCard } from '../components/result-card';
 import { Jumbotron } from '../components/jumbotron';
 import { TeamSpotlight } from '../components/team-spotlight';
 import { useStore, selectTeams } from '../store/store';
 import { computeStandings } from '../data/tournament';
 import { buildBracket, deepestRound, ROUND_LABEL } from '../lib/bracket';
 import { bestOfWorst, teamPoints, started, playerTotal, rankPlayers, type ScoreCtx } from '../lib/scoring';
-import { TICKER, NEXTUP, WORST_TEAMS, type Person, type NextUpItem } from '../data/teams';
+import { nextUp, latestResults, tickerItems, fixtureToNextUp } from '../lib/fixtures';
+import { WORST_TEAMS, type Person } from '../data/teams';
+import type { Fixture } from '../store/types';
 
 /* ---------- Live leaders board (tap to expand top-3 ↔ full ranked table) ---------- */
 function HomeLeaders({
@@ -119,23 +122,32 @@ export function HomePage() {
       subtitle={bowCode ? `${ROUND_LABEL[deepestRound(bowCode, bracket)]} · ${teamPoints(bowCode, ctx)} pts` : undefined} />
   );
 
-  const onReminder = (m: NextUpItem) => {
-    const id = `${m.a}-${m.b}`;
-    const has = app.reminders.has(id);
-    app.toggleReminder(id);
-    app.ping(has ? `🔕 Reminder off for ${m.a} v ${m.b}` : `🔔 Reminder set for ${m.a} v ${m.b}!`);
+  // Real schedule (live feed) drives Next Up, Latest Results and the ticker.
+  const fixtures = useStore((s) => s.fixtures);
+  const now = Date.now();
+  const upcoming = nextUp(fixtures, now);
+  const recent = latestResults(fixtures);
+  const tick = tickerItems(fixtures, now);
+  const hasFixtures = fixtures.length > 0;
+
+  const onFixtureReminder = (f: Fixture) => {
+    const has = app.reminders.has(f.id);
+    app.toggleReminder(f.id);
+    const nm = (c: string) => teams[c]?.name ?? c;
+    app.ping(has ? `🔕 Reminder off for ${nm(f.a)} v ${nm(f.b)}`
+      : `🔔 Reminder set for ${nm(f.a)} v ${nm(f.b)}!`);
   };
 
-  const LEDTicker = (
+  const LEDTicker = tick.length ? (
     <div style={{ background: '#0a1330', border: '4px solid var(--ink)', borderRadius: 12,
       padding: '9px 0', overflow: 'hidden', boxShadow: 'inset 0 0 18px rgba(255,210,63,.08)',
       display: 'flex', alignItems: 'center' }}>
       <span className="head" style={{ background: '#ff5d5d', color: '#fff', fontSize: 12,
         padding: '5px 10px', margin: '0 8px', borderRadius: 7, flex: '0 0 auto',
         boxShadow: '0 0 10px rgba(255,93,93,.6)' }}>⚽ SCORES</span>
-      <div style={{ flex: 1, minWidth: 0 }}><Ticker items={TICKER} led speed={30} /></div>
+      <div style={{ flex: 1, minWidth: 0 }}><Ticker items={tick} led speed={30} /></div>
     </div>
-  );
+  ) : null;
 
   const jumbo = (
     <div className="tap" title="Tap the big screen!"
@@ -144,18 +156,53 @@ export function HomePage() {
     </div>
   );
 
-  const NextUp = (
+  const cardsGrid = (children: ReactNode) => (
     <div style={{ display: mobile ? 'flex' : 'grid', flexDirection: 'column',
-      gridTemplateColumns: mobile ? undefined : '1fr 1fr', gap: 14 }}>
-      {NEXTUP.slice(0, 2).map((m, i) => (
-        <NextUpCard key={i} m={m} reminded={reminders.has(`${m.a}-${m.b}`)} onReminder={onReminder} />
-      ))}
+      gridTemplateColumns: mobile ? undefined : '1fr 1fr', gap: 14 }}>{children}</div>
+  );
+
+  const heading = (text: string) => (
+    <div className="head" style={{ color: '#fff', fontSize: wide ? 20 : 18, letterSpacing: '.5px',
+      display: 'flex', alignItems: 'center', gap: 8, textShadow: '0 2px 0 rgba(0,0,0,.3)' }}>{text}</div>
+  );
+
+  const note = (text: string) => (
+    <div className="sticker" style={{ padding: '14px', textAlign: 'center' }}>
+      <div style={{ fontSize: 13, fontWeight: 700, opacity: .7 }}>{text}</div>
     </div>
   );
 
-  const NextUpHeading = (
-    <div className="head" style={{ color: '#fff', fontSize: wide ? 20 : 18, letterSpacing: '.5px',
-      display: 'flex', alignItems: 'center', gap: 8, textShadow: '0 2px 0 rgba(0,0,0,.3)' }}>⚽ NEXT UP</div>
+  const emptyFixtures = (
+    <div className="sticker" style={{ padding: '18px', textAlign: 'center', display: 'flex',
+      flexDirection: 'column', alignItems: 'center', gap: 10 }}>
+      <div style={{ fontSize: 32 }}>📅</div>
+      <div className="head" style={{ fontSize: 16, lineHeight: 1.15 }}>
+        Fixtures load once the live feed is connected</div>
+      <div style={{ fontSize: 12.5, fontWeight: 700, opacity: .7, maxWidth: 300 }}>
+        Connect API-Football in Admin and the next games and latest results show up here.</div>
+      <div className="head tap pill" onClick={() => app.go('Admin')} style={{ background: 'var(--sun)',
+        color: 'var(--ink)', fontSize: 13, padding: '7px 16px', borderRadius: 999,
+        border: '3px solid var(--ink)', boxShadow: '2px 3px 0 rgba(27,42,74,.8)' }}>⚙️ Open Admin</div>
+    </div>
+  );
+
+  /* Next Up + Latest Results, shared between the mobile stack and the wide column. */
+  const fixturesArea = !hasFixtures ? emptyFixtures : (
+    <>
+      {heading('⚽ NEXT UP')}
+      {upcoming.length
+        ? cardsGrid(upcoming.map((f) => (
+            <NextUpCard key={f.id} m={fixtureToNextUp(f)}
+              reminded={reminders.has(f.id)} onReminder={() => onFixtureReminder(f)} />
+          )))
+        : note('No upcoming matches right now — see the Schedule for the full diary.')}
+      {recent.length > 0 && (
+        <>
+          {heading('🏁 LATEST RESULTS')}
+          {cardsGrid(recent.map((f) => <ResultCard key={f.id} f={f} teams={teams} />))}
+        </>
+      )}
+    </>
   );
 
   if (mobile) {
@@ -165,8 +212,7 @@ export function HomePage() {
         {LEDTicker}
         <HomeLeaders people={people} ctx={ctx} onPerson={app.openPerson}
           onOpenSweepstake={() => app.go('Sweepstake')} wide={false} />
-        {NextUpHeading}
-        {NextUp}
+        {fixturesArea}
         {BestWorst}
       </>
     );
@@ -182,8 +228,7 @@ export function HomePage() {
           {BestWorst}
         </div>
         <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
-          {NextUpHeading}
-          {NextUp}
+          {fixturesArea}
         </div>
       </div>
     </>
