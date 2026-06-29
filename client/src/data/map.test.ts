@@ -1,5 +1,6 @@
 import { describe, expect, test } from 'vitest';
-import { VENUES, HOME, lonLatXY, stageRoutes, teamGames, koGame } from './map';
+import { VENUES, HOME, lonLatXY, stageRoutes, teamGames, koGame, koTieInfo, CITY_HOST } from './map';
+import type { Tie } from '../lib/bracket';
 
 describe('map data', () => {
   test('16 host venues, 48 team homes', () => {
@@ -34,5 +35,39 @@ describe('map data', () => {
     const overlaid = koGame('R32', 0, { 'R32:0': { score: [2, 1], played: true } });
     expect(overlaid.played).toBe(true);
     expect(overlaid.score).toEqual([2, 1]);
+  });
+
+  test('CITY_HOST maps host cities back to their host code', () => {
+    expect(CITY_HOST['New York']).toBe('USA');
+    expect(CITY_HOST['Toronto']).toBe('CAN');
+    expect(CITY_HOST['Mexico City']).toBe('MEX');
+  });
+
+  test("koTieInfo prefers the tie's real ts/venue when present", () => {
+    const tie: Tie = {
+      a: 'ARG', b: 'FRA', w: 'ARG', as: null, bs: null, played: false,
+      ts: Date.UTC(2026, 6, 4, 19, 0), venue: 'New York',
+    };
+    const info = koTieInfo(tie, 'R16', 0);
+    expect(info.city).toBe('New York');
+    expect(info.host).toBe('USA');
+    expect(info.played).toBe(false);
+    expect(info.date).toMatch(/4 Jul/);
+    expect(info.time).toBe('20:00'); // 19:00 UTC -> 20:00 BST
+  });
+
+  test('koTieInfo carries the real score for a played tie', () => {
+    const tie: Tie = {
+      a: 'ARG', b: 'FRA', w: 'ARG', as: 3, bs: 2, played: true,
+      ts: Date.UTC(2026, 6, 19, 18, 0), venue: 'New York',
+    };
+    const info = koTieInfo(tie, 'F', 0);
+    expect(info.played).toBe(true);
+    expect(info.score).toEqual([3, 2]);
+  });
+
+  test('koTieInfo falls back to koGame when the tie has no real fixture', () => {
+    const tie: Tie = { a: 'ARG', b: 'FRA', w: 'ARG' };
+    expect(koTieInfo(tie, 'R32', 0)).toEqual(koGame('R32', 0));
   });
 });

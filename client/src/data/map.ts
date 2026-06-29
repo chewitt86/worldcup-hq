@@ -10,7 +10,8 @@
 import { TEAMS, type Team } from './teams';
 import { GROUPS, GROUP_FIXTURES, groupOf } from './tournament';
 import { buildBracket, type Tie, type SavedResult } from '../lib/bracket';
-import type { KoLive } from '../store/types';
+import { dayLabel, kickTime } from '../lib/fixtures';
+import type { KoLive, Fixture } from '../store/types';
 
 /* ---- types ---- */
 export type KoStage = 'R32' | 'R16' | 'QF' | 'SF' | 'F';
@@ -92,6 +93,12 @@ export const VENUES: Record<string, Venue> = {
   GDL: { city: 'Guadalajara', host: 'MEX', lat: 20.68, lon: -103.46 },
   MTY: { city: 'Monterrey', host: 'MEX', lat: 25.67, lon: -100.24 },
 };
+
+/* Reverse lookup: a real fixture's host-city string (e.g. "New York") back to
+   its host code ("USA"/"CAN"/"MEX"), so koTieInfo can show "New York, USA". */
+export const CITY_HOST: Record<string, string> = Object.fromEntries(
+  Object.values(VENUES).map((v) => [v.city, v.host]),
+);
 
 /* Team home capitals (approx) — all 48 nations */
 export const HOME: Record<string, LatLon> = {
@@ -178,6 +185,7 @@ export function stageRoutes(
   results: ResultsMap = {},
   teams: Record<string, Team> = TEAMS,
   koLive: KoLive | null = null,
+  fixtures: Fixture[] = [],
 ): StageRoutesResult {
   if (stage === 'Groups') {
     return {
@@ -192,7 +200,7 @@ export function stageRoutes(
         }))),
     };
   }
-  const b = buildBracket({ results, teams, koLive });
+  const b = buildBracket({ results, teams, koLive, fixtures });
   const ties: Tie[] = stage === 'F'
     ? [b.final]
     : (({ R32: b.r32, R16: b.r16, QF: b.qf, SF: b.sf } as Record<string, Tie[]>)[stage] || []);
@@ -227,6 +235,7 @@ export function teamGames(
   stage: MapStage,
   results: ResultsMap = {},
   koLive: KoLive | null = null,
+  fixtures: Fixture[] = [],
 ): TeamGame[] {
   if (stage === 'Groups') {
     const g = groupOf(code);
@@ -254,7 +263,7 @@ export function teamGames(
         };
       });
   }
-  const sr = stageRoutes(stage, results, TEAMS, koLive);
+  const sr = stageRoutes(stage, results, TEAMS, koLive, fixtures);
   return sr.matches
     .map((m, i) => ({ m, i }))
     .filter(({ m }) => m.a === code || m.b === code)
@@ -299,5 +308,28 @@ export function koGame(stage: KoStage, i: number, results: ResultsMap = {}): KoG
     time: KO_TIMES[i % KO_TIMES.length],
     played: !!(res && res.played),
     score: res ? res.score : null,
+  };
+}
+
+/* Schedule + venue for a knockout tie, preferring the tie's REAL fixture data
+   (kick-off ts + host city) and formatting it with the BST helpers; falls back
+   to the synthetic koGame schedule when the tie carries no real fixture. */
+export function koTieInfo(
+  tie: Tie,
+  stage: KoStage,
+  i: number,
+  results: ResultsMap = {},
+): KoGameInfo {
+  if (tie.ts == null || !tie.venue) return koGame(stage, i, results);
+  const played = tie.played === true && tie.as != null && tie.bs != null;
+  return {
+    label: (KO_DATES[stage] || KO_DATES.F).label,
+    venue: tie.venue,
+    city: tie.venue,
+    host: CITY_HOST[tie.venue] ?? '',
+    date: dayLabel(tie.ts),
+    time: kickTime(tie.ts),
+    played,
+    score: played ? [tie.as as number, tie.bs as number] : null,
   };
 }
