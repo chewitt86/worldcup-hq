@@ -82,9 +82,10 @@ function TeamPopup({
   const teams = useStore(selectTeams);
   const storeResults = useStore((s) => s.results);
   const koLive = useStore((s) => s.koLive);
+  const fixtures = useStore((s) => s.fixtures);
   const standings = useMemo(() => computeStandings(storeResults), [storeResults]);
-  const bracket = useMemo(() => buildBracket({ results: storeResults, teams, koLive }),
-    [storeResults, teams, koLive]);
+  const bracket = useMemo(() => buildBracket({ results: storeResults, teams, koLive, fixtures }),
+    [storeResults, teams, koLive, fixtures]);
   const { people, go, setMapFocus, page, settings } = useApp();
   const ctx = { teams, standings, bracket };
   const isLive = started(storeResults, settings?.kickoff);

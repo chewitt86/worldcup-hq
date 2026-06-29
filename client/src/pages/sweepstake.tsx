@@ -114,8 +114,9 @@ export function SweepstakePage() {
   const teams = useStore(selectTeams);
   const results = useStore((s) => s.results);
   const koLive = useStore((s) => s.koLive);
+  const fixtures = useStore((s) => s.fixtures);
   const standings = useMemo(() => computeStandings(results), [results]);
-  const bracket = useMemo(() => buildBracket({ results, teams, koLive }), [results, teams, koLive]);
+  const bracket = useMemo(() => buildBracket({ results, teams, koLive, fixtures }), [results, teams, koLive, fixtures]);
   const ctx = { teams, standings, bracket };
   const isStarted = started(results, settings.kickoff);
 
