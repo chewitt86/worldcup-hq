@@ -19,7 +19,7 @@ import {
   oddsNum as groupOddsNum,
   type Standing,
 } from '../data/tournament';
-import type { KoLive, KoTie } from '../store/types';
+import type { KoLive, KoTie, Fixture } from '../store/types';
 
 /* ---- types ---- */
 export const STAGES = ['R32', 'R16', 'QF', 'SF', 'Final'] as const;
@@ -34,10 +34,46 @@ export interface Tie {
   bs?: number | null;
   pen?: string | null;
   played?: boolean;
+  /* present only when a real fixture drives this tie (kick-off ms + host city). */
+  ts?: number | null;
+  venue?: string;
 }
 
 /* The full count a round must report before its koLive array is authoritative. */
 const ROUND_COUNT: Record<Stage, number> = { R32: 16, R16: 8, QF: 4, SF: 2, Final: 1 };
+
+/* A raw knockout tie pulled from the fixtures feed, carrying real schedule data.
+   The winner is decided later (in buildBracket) once teams/standings are known. */
+export interface FxTie {
+  a: string;
+  b: string;
+  as: number | null;
+  bs: number | null;
+  played: boolean;
+  ts: number;
+  venue: string;
+}
+
+/* Bucket the feed's knockout fixtures by stage, order each bucket by kick-off,
+   and return ONLY fully-drawn rounds: a round whose tie count matches
+   ROUND_COUNT[stage] and where every tie has both teams known. Partial/undrawn
+   rounds are omitted so the odds projection fills them. The 'Third' place
+   fixture has no bracket slot and is ignored (it is not a member of STAGES). */
+export function fullKoRounds(fixtures: Fixture[] = []): Partial<Record<Stage, FxTie[]>> {
+  const out: Partial<Record<Stage, FxTie[]>> = {};
+  for (const stage of STAGES) {
+    const rows = fixtures
+      .filter((f) => f.stage === stage)
+      .slice()
+      .sort((x, y) => x.ts - y.ts);
+    if (rows.length !== ROUND_COUNT[stage]) continue;
+    if (!rows.every((f) => f.a && f.b)) continue;
+    out[stage] = rows.map((f) => ({
+      a: f.a, b: f.b, as: f.as, bs: f.bs, played: f.played, ts: f.ts, venue: f.venue,
+    }));
+  }
+  return out;
+}
 
 export interface Bracket {
   r32: Tie[];

@@ -1,8 +1,8 @@
 import { test, expect } from 'vitest';
-import { buildBracket, qualifiers } from './bracket';
+import { buildBracket, qualifiers, fullKoRounds } from './bracket';
 import { computeStandings, GROUP_FIXTURES } from '../data/tournament';
 import { TEAMS } from '../data/teams';
-import type { KoLive, KoTie } from '../store/types';
+import type { KoLive, KoTie, Fixture } from '../store/types';
 
 /* a results map with every group game played (a home win), so the group stage
    is "complete" and the real qualifiers are known. */
@@ -90,4 +90,44 @@ test('a partial koLive round is ignored (group projection kept)', () => {
   expect(b.r32[0].a).toBe(proj.r32[0].a);
   expect(b.r32[0].b).toBe(proj.r32[0].b);
   expect(b.r32[0].played).toBeUndefined();
+});
+
+/* 16 fully-drawn R32 fixtures (2-0 home wins), ts ascending by index. */
+function fxR32(): Fixture[] {
+  const out: Fixture[] = [];
+  for (let i = 0; i < 16; i++) {
+    out.push({
+      id: `fx-r32-${i}`,
+      ts: 1_780_000_000_000 + i * 3_600_000,
+      stage: 'R32',
+      label: 'Round of 32',
+      venue: 'New York',
+      a: `H${i}`,
+      b: `A${i}`,
+      as: 2,
+      bs: 0,
+      played: true,
+    });
+  }
+  return out;
+}
+
+test('fullKoRounds returns a fully-drawn round, ts-ordered, and omits absent rounds', () => {
+  const rounds = fullKoRounds(fxR32());
+  expect(rounds.R32).toHaveLength(16);
+  expect(rounds.R32![0].a).toBe('H0');
+  expect(rounds.R32![0].venue).toBe('New York');
+  expect(rounds.R16).toBeUndefined();
+});
+
+test('fullKoRounds drops a round that is short of full count or missing a team', () => {
+  expect(fullKoRounds(fxR32().slice(0, 15)).R32).toBeUndefined();
+  const fx = fxR32();
+  fx[2].a = '';
+  expect(fullKoRounds(fx).R32).toBeUndefined();
+});
+
+test('fullKoRounds returns an empty object for no fixtures', () => {
+  expect(fullKoRounds([])).toEqual({});
+  expect(fullKoRounds()).toEqual({});
 });
