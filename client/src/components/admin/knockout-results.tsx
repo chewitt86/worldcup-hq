@@ -54,7 +54,8 @@ export function KnockoutResults({ token }: { token: string }) {
   const { ping } = useApp();
   const teams = useStore(selectTeams);
   const results = useStore((s) => s.results);
-  const b = useMemo(() => buildBracket({ results, teams }), [results, teams]);
+  const fixtures = useStore((s) => s.fixtures);
+  const b = useMemo(() => buildBracket({ results, teams, fixtures }), [results, teams, fixtures]);
   const ROUNDS = [
     { id: 'R32', label: 'Round of 32', ties: b.r32 },
     { id: 'R16', label: 'Last 16', ties: b.r16 },

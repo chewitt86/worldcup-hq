@@ -112,8 +112,13 @@ export function HomePage() {
   const teams = useStore(selectTeams);
   const results = useStore((s) => s.results);
   const koLive = useStore((s) => s.koLive);
+  const fixtures = useStore((s) => s.fixtures);
+
+  const bracket = useMemo(
+    () => buildBracket({ results, teams, koLive, fixtures }),
+    [results, teams, koLive, fixtures],
+  );
   const standings = useMemo(() => computeStandings(results), [results]);
-  const bracket = useMemo(() => buildBracket({ results, teams, koLive }), [results, teams, koLive]);
   const ctx = { teams, standings, bracket };
   const isStarted = started(results, settings.kickoff);
   const bowCode = bestOfWorst(WORST_TEAMS, ctx, isStarted);
@@ -123,7 +128,6 @@ export function HomePage() {
   );
 
   // Real schedule (live feed) drives Next Up, Latest Results and the ticker.
-  const fixtures = useStore((s) => s.fixtures);
   const now = Date.now();
   const upcoming = nextUp(fixtures, now);
   const recent = latestResults(fixtures);

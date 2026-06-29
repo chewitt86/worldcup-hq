@@ -41,6 +41,7 @@ export function MapPage() {
   const teams = useStore(selectTeams);
   const results = useStore((s) => s.results);
   const koLive = useStore((s) => s.koLive);
+  const fixtures = useStore((s) => s.fixtures);
   const [stage, setStage] = useState<MapStage>('Groups');
   const [selected, setSelected] = useState<string | null>(null);
   const [personId, setPersonId] = useState<string | null>(null);
@@ -59,7 +60,7 @@ export function MapPage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [app.mapFocus]);
 
-  const sr = useMemo(() => stageRoutes(stage, results, teams, koLive), [stage, results, teams, koLive]);
+  const sr = useMemo(() => stageRoutes(stage, results, teams, koLive, fixtures), [stage, results, teams, koLive, fixtures]);
   const pool = sr.teams.slice().sort((a, b) => oddsNum(a) - oddsNum(b));
   const person = people.find((p) => p.id === personId);
   const chipTeams = person ? person.teams.filter((c) => pool.includes(c)) : pool;
@@ -157,7 +158,7 @@ export function MapPage() {
                 padding: '4px 10px' }}>ⓘ TEAM INFO</span>
           </div>
           <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-            {teamGames(single, stage, results, koLive).map((gm, i) => {
+            {teamGames(single, stage, results, koLive, fixtures).map((gm, i) => {
               const resCol = ({ W: 'var(--grass2)', D: 'var(--orange)', L: 'var(--tomato)' } as Record<string, string>)[gm.result ?? ''];
               return (
                 <div key={i} className="tap sticker-sm" style={{ background: 'var(--cream)', padding: '9px 12px',
