@@ -131,3 +131,47 @@ test('fullKoRounds returns an empty object for no fixtures', () => {
   expect(fullKoRounds([])).toEqual({});
   expect(fullKoRounds()).toEqual({});
 });
+
+test('a full drawn R32 from fixtures fills the bracket with no results or koLive', () => {
+  const b = buildBracket({ results: {}, teams: TEAMS, fixtures: fxR32() });
+  expect(b.r32).toHaveLength(16);
+  expect(b.r32[0].a).toBe('H0');
+  expect(b.r32[0].b).toBe('A0');
+  expect(b.r32[0].as).toBe(2);
+  expect(b.r32[0].bs).toBe(0);
+  expect(b.r32[0].played).toBe(true);
+  expect(b.r32[0].venue).toBe('New York');
+  expect(b.r32[0].w).toBe('H0'); // 2-0 home win
+});
+
+test('a partial R32 from fixtures leaves the bracket TBD', () => {
+  const b = buildBracket({ results: {}, teams: TEAMS, fixtures: fxR32().slice(0, 15) });
+  expect(b.champ).toBe('');
+  expect(b.r32.every((t) => t.a === '' && t.b === '')).toBe(true);
+});
+
+test('played R32 fixtures advance their actual winners into the projected R16', () => {
+  const b = buildBracket({ results: {}, teams: TEAMS, fixtures: fxR32() });
+  expect(b.r16).toHaveLength(8);
+  expect(b.r16[0].a).toBe('H0');
+  expect(b.r16[0].b).toBe('H1');
+});
+
+test('a played Final fixture sets champ to the real winner', () => {
+  const fixtures: Fixture[] = [{
+    id: 'fx-final', ts: 1_790_000_000_000, stage: 'Final', label: 'Final',
+    venue: 'New York', a: 'ARG', b: 'FRA', as: 3, bs: 2, played: true,
+  }];
+  const b = buildBracket({ results: {}, teams: TEAMS, fixtures });
+  expect(b.final.a).toBe('ARG');
+  expect(b.final.b).toBe('FRA');
+  expect(b.final.played).toBe(true);
+  expect(b.champ).toBe('ARG');
+});
+
+test('empty fixtures leave existing behaviour unchanged', () => {
+  const base = buildBracket({ results: fullGroups(), teams: TEAMS });
+  const withEmpty = buildBracket({ results: fullGroups(), teams: TEAMS, fixtures: [] });
+  expect(withEmpty.champ).toBe(base.champ);
+  expect(withEmpty.r32.map((t) => [t.a, t.b])).toEqual(base.r32.map((t) => [t.a, t.b]));
+});
