@@ -150,11 +150,34 @@ test('a partial R32 from fixtures leaves the bracket TBD', () => {
   expect(b.r32.every((t) => t.a === '' && t.b === '')).toBe(true);
 });
 
-test('played R32 fixtures advance their actual winners into the projected R16', () => {
+test('played R32 fixtures advance their actual winners into R16', () => {
   const b = buildBracket({ results: {}, teams: TEAMS, fixtures: fxR32() });
   expect(b.r16).toHaveLength(8);
   expect(b.r16[0].a).toBe('H0');
   expect(b.r16[0].b).toBe('H1');
+});
+
+/* ---- no odds projection: unknown slots stay TBD, never guessed ---- */
+test('unplayed R32 fixtures do NOT project any team into R16', () => {
+  const fx = fxR32().map((f): Fixture => ({ ...f, played: false, as: null, bs: null }));
+  const b = buildBracket({ results: {}, teams: TEAMS, fixtures: fx });
+  // the real drawn R32 teams still show...
+  expect(b.r32[0].a).toBe('H0');
+  expect(b.r32[0].b).toBe('A0');
+  // ...but with no winner guessed, and nothing projected into later rounds.
+  expect(b.r32[0].w).toBe('');
+  expect(b.r16.every((t) => t.a === '' && t.b === '')).toBe(true);
+  expect(b.qf.every((t) => t.a === '' && t.b === '')).toBe(true);
+  expect(b.champ).toBe('');
+});
+
+test('a played R32 tie advances its real winner while an unplayed neighbour stays TBD', () => {
+  const fx = fxR32().map((f): Fixture => ({ ...f, played: false, as: null, bs: null }));
+  fx[0] = { ...fx[0], played: true, as: 2, bs: 0 }; // only tie 0 is played: H0 beats A0
+  const b = buildBracket({ results: {}, teams: TEAMS, fixtures: fx });
+  expect(b.r32[0].w).toBe('H0');
+  expect(b.r16[0].a).toBe('H0'); // real winner advances
+  expect(b.r16[0].b).toBe('');   // neighbour not played yet → TBD, not projected
 });
 
 test('a played Final fixture sets champ to the real winner', () => {
