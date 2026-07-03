@@ -137,6 +137,14 @@ test('teamCode maps a feed name (and alias) to our 3-letter code', () => {
   assert.equal(teamCode('Atlantis'), null);
 });
 
+test('teamCode maps the feed spelling "Cape Verde Islands" to CPV', () => {
+  // API-Football labels Group H's Cape Verde as "Cape Verde Islands"; without
+  // this alias their group games and R32 tie resolve to an empty code, which
+  // invalidates the whole first knockout round and blanks the bracket.
+  assert.equal(teamCode('Cape Verde Islands'), 'CPV');
+  assert.equal(teamCode('Cape Verde Islands'), teamCode('Cape Verde'));
+});
+
 /* ----------------------------- normaliseKnockout -------------------------- */
 
 test('normaliseKnockout maps a played R32 tie to codes/scores/played', () => {
