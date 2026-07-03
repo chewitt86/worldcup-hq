@@ -11,7 +11,7 @@ import { useStore, selectTeams } from '../store/store';
 import type { Person, Team } from '../data/teams';
 import { backers, ELIMINATED } from '../data/tournament';
 import { buildBracket, type Tie } from '../lib/bracket';
-import { koGame, type KoStage, type ResultsMap } from '../data/map';
+import { koTieInfo, type KoStage, type ResultsMap } from '../data/map';
 import { Flag } from '../components/flag';
 import { Avatar } from '../components/avatar';
 import { PageTitle } from '../components/labels';
@@ -99,7 +99,7 @@ function TieCard({
   teams: Record<string, Team>;
   results: ResultsMap;
 }) {
-  const g = koGame(stage, gi, results);
+  const g = koTieInfo(tie, stage, gi, results);
   // prefer the tie's OWN koLive score when it carries a played feed result,
   // else fall back to the koGame/results overlay.
   const live = tie.played === true && tie.as != null && tie.bs != null;
@@ -207,7 +207,7 @@ function GameModal({
   results: ResultsMap;
 }) {
   const { tie, stage, i } = game;
-  const info = koGame(stage, i, results);
+  const info = koTieInfo(tie, stage, i, results);
   const host = ({ USA: "USA", CAN: "Canada", MEX: "Mexico" } as Record<string, string>)[info.host];
   // prefer the tie's OWN koLive score when it carries a played feed result.
   const live = tie.played === true && tie.as != null && tie.bs != null;
@@ -270,7 +270,7 @@ function GameModal({
               </div>
               <div style={{ display: "flex", alignItems: "center", gap: 9 }}>
                 <span style={{ fontSize: 17 }}>📍</span>
-                <span style={{ fontWeight: 700, fontSize: 14 }}>{info.city}, {host}</span>
+                <span style={{ fontWeight: 700, fontSize: 14 }}>{info.city}{host ? `, ${host}` : ''}</span>
               </div>
             </div>
           )}
@@ -380,12 +380,16 @@ export function KnockoutPage() {
   const results = useStore((s) => s.results);
   const teams = useStore(selectTeams);
   const koLive = useStore((s) => s.koLive);
+  const fixtures = useStore((s) => s.fixtures);
   const [team, setTeam] = useState<string | null>(null);
   const [game, setGame] = useState<GameRef | null>(null);
   // re-derive when the store's results, live knockout feed or derived team
   // display data change; full koLive rounds drive real advancement, saved
   // knockout scores and odds-edits feed the projection
-  const b = useMemo(() => buildBracket({ results, teams, koLive }), [results, teams, koLive]);
+  const b = useMemo(
+    () => buildBracket({ results, teams, koLive, fixtures }),
+    [results, teams, koLive, fixtures],
+  );
   const runnerUp = b.final.a === b.champ ? b.final.b : b.final.a;
   const tbd = !b.champ; // bracket not yet decided (group stage still to finish)
   const apiRef = useRef<PanZoomHandle | null>(null);

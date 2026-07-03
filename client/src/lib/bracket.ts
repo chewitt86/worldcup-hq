@@ -19,7 +19,7 @@ import {
   oddsNum as groupOddsNum,
   type Standing,
 } from '../data/tournament';
-import type { KoLive, KoTie } from '../store/types';
+import type { KoLive, KoTie, Fixture } from '../store/types';
 
 /* ---- types ---- */
 export const STAGES = ['R32', 'R16', 'QF', 'SF', 'Final'] as const;
@@ -34,10 +34,46 @@ export interface Tie {
   bs?: number | null;
   pen?: string | null;
   played?: boolean;
+  /* present only when a real fixture drives this tie (kick-off ms + host city). */
+  ts?: number | null;
+  venue?: string;
 }
 
 /* The full count a round must report before its koLive array is authoritative. */
 const ROUND_COUNT: Record<Stage, number> = { R32: 16, R16: 8, QF: 4, SF: 2, Final: 1 };
+
+/* A raw knockout tie pulled from the fixtures feed, carrying real schedule data.
+   The winner is decided later (in buildBracket) once teams/standings are known. */
+export interface FxTie {
+  a: string;
+  b: string;
+  as: number | null;
+  bs: number | null;
+  played: boolean;
+  ts: number;
+  venue: string;
+}
+
+/* Bucket the feed's knockout fixtures by stage, order each bucket by kick-off,
+   and return ONLY fully-drawn rounds: a round whose tie count matches
+   ROUND_COUNT[stage] and where every tie has both teams known. Partial/undrawn
+   rounds are omitted so the odds projection fills them. The 'Third' place
+   fixture has no bracket slot and is ignored (it is not a member of STAGES). */
+export function fullKoRounds(fixtures: Fixture[] = []): Partial<Record<Stage, FxTie[]>> {
+  const out: Partial<Record<Stage, FxTie[]>> = {};
+  for (const stage of STAGES) {
+    const rows = fixtures
+      .filter((f) => f.stage === stage)
+      .slice()
+      .sort((x, y) => x.ts - y.ts);
+    if (rows.length !== ROUND_COUNT[stage]) continue;
+    if (!rows.every((f) => f.a && f.b)) continue;
+    out[stage] = rows.map((f) => ({
+      a: f.a, b: f.b, as: f.as, bs: f.bs, played: f.played, ts: f.ts, venue: f.venue,
+    }));
+  }
+  return out;
+}
 
 export interface Bracket {
   r32: Tie[];
@@ -63,6 +99,9 @@ export interface BracketState {
      full expected count (see ROUND_COUNT). Absent/partial rounds keep the
      projection. */
   koLive?: KoLive | null;
+  /* day-by-day schedule from the feed; fully-drawn knockout rounds here are the
+     PRIMARY source for the bracket (real matchups, scores, dates, venues). */
+  fixtures?: Fixture[];
 }
 
 /* Map a feed KoTie onto a Tie: the winner is the higher-scoring side, or the
@@ -71,6 +110,24 @@ function mapKoTie(t: KoTie): Tie {
   const { a, b, as, bs, pen } = t;
   const w = (as as number) > (bs as number) ? a : (bs as number) > (as as number) ? b : (pen || '');
   return { a, b, w, as, bs, pen, played: t.played };
+}
+
+/* Map a fixtures-derived FxTie onto a Tie. A played, decisive result picks the
+   higher-scoring side; an unplayed (or score-level) tie falls back to the
+   odds-projected stronger seed, so a drawn-but-unplayed round still projects
+   forward to a champion. The real ts/venue ride along for the schedule popup.
+   (Fixtures carry no penalty winner, so a played score-level tie also uses the
+   seed tiebreak; the next round, when drawn, supplies who actually advanced.) */
+function mapFxTie(
+  t: FxTie,
+  teams: Record<string, Team>,
+  standings: Record<string, Standing>,
+): Tie {
+  const decisive = t.played && t.as != null && t.bs != null && t.as !== t.bs;
+  const w = decisive
+    ? ((t.as as number) > (t.bs as number) ? t.a : t.b)
+    : strength(t.a, teams, standings) >= strength(t.b, teams, standings) ? t.a : t.b;
+  return { a: t.a, b: t.b, w, as: t.as, bs: t.bs, played: t.played, ts: t.ts, venue: t.venue };
 }
 
 /* ---- odds → number (lower odds = stronger). Reads the supplied teams map so
@@ -209,13 +266,15 @@ function tbdBracket(): Bracket {
 }
 
 export function buildBracket(state: BracketState): Bracket {
-  const { results, teams, koLive } = state;
+  const { results, teams, koLive, fixtures } = state;
   const standings = computeStandings(results);
+  const koFx = fullKoRounds(fixtures);
+  const hasFx = Object.keys(koFx).length > 0;
 
   /* Until the group stage finishes (so the qualifiers are real) — or the feed
-     delivers an actual knockout draw — the knockout teams aren't known. Show a
-     blank/TBD bracket rather than an odds-based prediction. */
-  if (!groupStageComplete(results) && !hasRealKoLive(koLive)) {
+     delivers an actual knockout draw via koLive or fixtures — the knockout teams
+     aren't known. Show a blank/TBD bracket rather than an odds-based prediction. */
+  if (!groupStageComplete(results) && !hasRealKoLive(koLive) && !hasFx) {
     return tbdBracket();
   }
 
@@ -231,19 +290,19 @@ export function buildBracket(state: BracketState): Bracket {
   }
 
   /* A round's koLive array, but only when it reports its FULL expected count
-     AND every tie has both teams decided. A round that the feed lists before
-     the draw (teams still "TBD" → empty codes) is treated as not-yet-available,
-     so the odds projection — with real seeded teams — is kept instead. */
+     AND every tie has both teams decided. */
   const liveRound = (stage: Stage): KoTie[] | null => {
     const arr = koLive ? koLive[stage] : null;
     if (!arr || arr.length !== ROUND_COUNT[stage]) return null;
     return arr.every((t) => t.a && t.b) ? arr : null;
   };
 
-  /* Resolve one round: a full koLive round REPLACES the projection (real teams
-     + scores, with the penalty winner advancing); otherwise build the
-     projection from the pairs fed in from the previous round's winners. */
+  /* Resolve one round. Precedence: a fully-drawn fixtures round (real matchups,
+     scores, dates, venues) REPLACES everything; else a full koLive round; else
+     the odds projection built from the previous round's winners. */
   const resolveRound = (pairs: [string, string][], stage: Stage): Tie[] => {
+    const fx = koFx[stage];
+    if (fx) return fx.map((t) => mapFxTie(t, teams, standings));
     const live = liveRound(stage);
     if (live) return live.map(mapKoTie);
     return pairs.map(([a, b], i) => ({ a, b, w: tieWinner(a, b, stage, i, results, teams, standings) }));

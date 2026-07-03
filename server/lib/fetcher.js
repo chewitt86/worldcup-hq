@@ -91,7 +91,7 @@ const ALIAS = {
   "cote d ivoire": "Ivory Coast", "cote divoire": "Ivory Coast", "cote d'ivoire": "Ivory Coast",
   "czech republic": "Czechia",
   "bosnia and herzegovina": "Bosnia & Herz.", "bosnia herzegovina": "Bosnia & Herz.", "bosnia": "Bosnia & Herz.",
-  "cabo verde": "Cape Verde",
+  "cabo verde": "Cape Verde", "cape verde islands": "Cape Verde",
   "democratic republic of the congo": "DR Congo", "congo dr": "DR Congo", "dr congo": "DR Congo",
   "ksa": "Saudi Arabia",
 };
