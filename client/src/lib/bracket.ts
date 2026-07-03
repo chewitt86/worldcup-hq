@@ -112,21 +112,13 @@ function mapKoTie(t: KoTie): Tie {
   return { a, b, w, as, bs, pen, played: t.played };
 }
 
-/* Map a fixtures-derived FxTie onto a Tie. A played, decisive result picks the
-   higher-scoring side; an unplayed (or score-level) tie falls back to the
-   odds-projected stronger seed, so a drawn-but-unplayed round still projects
-   forward to a champion. The real ts/venue ride along for the schedule popup.
-   (Fixtures carry no penalty winner, so a played score-level tie also uses the
-   seed tiebreak; the next round, when drawn, supplies who actually advanced.) */
-function mapFxTie(
-  t: FxTie,
-  teams: Record<string, Team>,
-  standings: Record<string, Standing>,
-): Tie {
+/* Map a fixtures-derived FxTie onto a Tie. Only a played, decisive result sets a
+   winner (the higher-scoring side); an unplayed or score-level tie has NO winner
+   ('') so nothing is guessed and the next round stays TBD until real results land.
+   The real ts/venue ride along for the schedule popup. */
+function mapFxTie(t: FxTie): Tie {
   const decisive = t.played && t.as != null && t.bs != null && t.as !== t.bs;
-  const w = decisive
-    ? ((t.as as number) > (t.bs as number) ? t.a : t.b)
-    : strength(t.a, teams, standings) >= strength(t.b, teams, standings) ? t.a : t.b;
+  const w = decisive ? ((t.as as number) > (t.bs as number) ? t.a : t.b) : '';
   return { a: t.a, b: t.b, w, as: t.as, bs: t.bs, played: t.played, ts: t.ts, venue: t.venue };
 }
 
@@ -181,19 +173,17 @@ export function mkTies(
 }
 
 /* Decide a single tie's winner: a saved, played result picks the higher-scoring
-   side; otherwise fall back to the projected stronger seed. */
+   side; an unplayed tie has NO winner ('') — an advancement is never guessed. */
 function tieWinner(
   a: string,
   b: string,
   stage: Stage,
   i: number,
   results: Record<string, SavedResult>,
-  teams: Record<string, Team>,
-  standings: Record<string, Standing>,
 ): string {
   const r = results[`${stage}:${i}`];
   if (r && r.played) return r.score[0] >= r.score[1] ? a : b;
-  return strength(a, teams, standings) >= strength(b, teams, standings) ? a : b;
+  return '';
 }
 
 /* Winners of one round paired up into the next round's match-ups. */
@@ -229,12 +219,11 @@ export function qualifiers(standings: Record<string, Standing>): string[] {
   return [...top2, ...bestThirds];
 }
 
-/* Build a full R32 → Final bracket. Standings are computed from saved group
-   results; the 32 qualifiers (top-2 + 8 best thirds) are seeded by `strength`
-   (odds weighted + group points), paired via `seedOrder`, then each round
-   resolves every tie from saved results (if played) or projection, and
-   propagates the ACTUAL winners into the next round. Pre-tournament (no results)
-   the 32 strongest-by-odds qualify and seed — the correct projection. */
+/* Build a full R32 → Final bracket from REAL data only. R32 comes from the drawn
+   fixtures (or koLive); each later round shows the ACTUAL winners advanced from
+   the round before, and any slot whose feeding tie hasn't been played stays TBD.
+   No odds projection is ever shown. The odds `strength`/`seedOrder` seeding is
+   retained only to order the R32 participants when the feed hasn't drawn them. */
 /* Every group round-robin game has a played score → the qualifiers are known. */
 function groupStageComplete(results: BracketState['results']): boolean {
   for (const g of Object.keys(GROUP_FIXTURES)) {
@@ -299,13 +288,14 @@ export function buildBracket(state: BracketState): Bracket {
 
   /* Resolve one round. Precedence: a fully-drawn fixtures round (real matchups,
      scores, dates, venues) REPLACES everything; else a full koLive round; else
-     the odds projection built from the previous round's winners. */
+     the ACTUAL winners advanced from the previous round (unknown slots stay TBD —
+     no odds projection is ever shown). */
   const resolveRound = (pairs: [string, string][], stage: Stage): Tie[] => {
     const fx = koFx[stage];
-    if (fx) return fx.map((t) => mapFxTie(t, teams, standings));
+    if (fx) return fx.map((t) => mapFxTie(t));
     const live = liveRound(stage);
     if (live) return live.map(mapKoTie);
-    return pairs.map(([a, b], i) => ({ a, b, w: tieWinner(a, b, stage, i, results, teams, standings) }));
+    return pairs.map(([a, b], i) => ({ a, b, w: tieWinner(a, b, stage, i, results) }));
   };
 
   const r32 = resolveRound(r32pairs, 'R32');
